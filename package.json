@@ -1,0 +1,37 @@
+{
+  "name": "vue3-vite-cesium-new",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.1.0",
+    "@turf/turf": "^6.5.0",
+    "axios": "^1.6.0",
+    "cesium": "1.82.0",
+    "cesium-navigation-es6": "^3.0.9",
+    "element-plus": "^2.4.2",
+    "lodash": "^4.17.21",
+    "nprogress": "^0.2.0",
+    "pinia": "^2.1.7",
+    "qs": "^6.11.2",
+    "vue": "^3.3.8",
+    "vue-router": "^4.2.5"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.200",
+    "@types/node": "^20.9.0",
+    "@types/nprogress": "^0.2.3",
+    "@types/qs": "^6.9.10",
+    "@vitejs/plugin-vue": "^4.4.0",
+    "sass": "^1.69.5",
+    "typescript": "^5.2.2",
+    "vite": "^4.5.0",
+    "vite-plugin-external": "^6.2.2",
+    "vue-tsc": "^1.8.22"
+  }
+}
