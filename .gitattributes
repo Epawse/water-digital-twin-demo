@@ -1,0 +1,6 @@
+# 标记 Cesium 库为第三方代码，不计入语言统计
+public/Cesium-1.82-epawse/** linguist-vendored
+
+# 确保正确识别文件类型
+*.vue linguist-language=Vue
+*.ts linguist-language=TypeScript
