@@ -11,7 +11,7 @@
 ## 技术栈
 
 - **前端框架**：Vue 3 + TypeScript + Vite
-- **3D 引擎**：Cesium 1.82 (epawse 定制版，支持底图滤镜)
+- **3D 引擎**：Cesium 1.82
 - **UI 组件**：Element Plus
 - **样式**：SCSS + 科幻风格 UI
 
