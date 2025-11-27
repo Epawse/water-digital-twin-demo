@@ -21,10 +21,10 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      '/api': {
-        target: 'http://map.217dan.com/addons/cesiummapv',
+      '/api/backend': {
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        rewrite: (path) => path.replace(/^\/api\/backend/, '/api')
       },
       '/map_asset': {
         target: 'http://myhome.217dan.com:8081',

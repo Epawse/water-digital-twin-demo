@@ -6,7 +6,7 @@
       <span class="deco-line"></span>
     </div>
 
-    <div class="content">
+    <div class="content" v-if="!isLoading && !errorMessage">
       <!-- Stats Grid -->
       <div class="stats-grid">
         <div class="stat-box" v-for="(stat, index) in stats" :key="index">
@@ -47,34 +47,67 @@
         </div>
       </div>
     </div>
+
+    <div v-else-if="isLoading" class="loading-state">
+        <div class="spinner"></div>
+        <span>数据加载中...</span>
+    </div>
+
+    <div v-else class="error-state">
+        <span>{{ errorMessage }}</span>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, ref, onMounted } from 'vue';
+import { fetchProjectOverviewStats } from '@/api/backend';
 
 export default defineComponent({
   name: 'ProjectOverview',
   setup() {
-    const stats = [
-      { label: '在线站点', value: 128, unit: '', percent: 85, isWarning: false },
-      { label: '今日告警', value: 3, unit: '次', percent: 15, isWarning: true },
-      { label: '库容占比', value: 68, unit: '%', percent: 68, isWarning: false },
-      { label: '平均降雨', value: 24, unit: 'mm', percent: 40, isWarning: false },
-    ];
-    return { stats };
+    const isLoading = ref(true);
+    const errorMessage = ref('');
+    
+    // Initialize with empty or default values
+    const stats = ref([
+      { label: '在线设备', value: 0, unit: '', percent: 0, isWarning: false },
+      { label: '今日告警', value: 0, unit: '次', percent: 0, isWarning: false },
+      { label: '库容占比', value: 0, unit: '%', percent: 0, isWarning: false },
+      { label: '平均降雨', value: 0, unit: 'mm', percent: 0, isWarning: false },
+    ]);
+
+    onMounted(async () => {
+      try {
+        const fetchedStats = await fetchProjectOverviewStats();
+        if (fetchedStats) {
+          stats.value = [
+            { label: '在线设备', value: fetchedStats.online_devices, unit: `/${fetchedStats.total_devices}`, percent: Math.round((fetchedStats.online_devices / fetchedStats.total_devices) * 100) || 0, isWarning: fetchedStats.online_devices < fetchedStats.total_devices * 0.8 },
+            { label: '今日告警', value: fetchedStats.today_alerts, unit: '次', percent: Math.min(100, (fetchedStats.today_alerts / 5) * 100), isWarning: fetchedStats.today_alerts > 0 }, // Assuming 5 is max reasonable alerts for bar
+            { label: '库容占比', value: fetchedStats.reservoir_capacity_percent, unit: '%', percent: fetchedStats.reservoir_capacity_percent, isWarning: fetchedStats.reservoir_capacity_percent > 90 },
+            { label: '平均降雨', value: fetchedStats.average_rainfall_mm, unit: 'mm', percent: Math.min(100, (fetchedStats.average_rainfall_mm / 50) * 100), isWarning: fetchedStats.average_rainfall_mm > 30 }, // Assuming 50mm is max for bar
+          ];
+        } else {
+            errorMessage.value = "无法获取数据";
+        }
+      } catch (e) {
+          errorMessage.value = "网络请求失败";
+      } finally {
+          isLoading.value = false;
+      }
+    });
+
+    return { stats, isLoading, errorMessage };
   }
 });
 </script>
 
 <style lang="scss" scoped>
 .overview-panel {
-  position: absolute;
-  top: 120px; /* 与导航菜单顶部对齐 */
-  left: 110px; /* Nav width (70) + left (20) + gap (20) */
-  width: 260px;
+  /* Removed absolute positioning to let it flow in parent */
+  width: 100%;
+  box-sizing: border-box;
   padding: 15px;
-  z-index: 80;
   animation: fadeIn 0.8s ease forwards;
 
   .panel-header {
@@ -164,6 +197,34 @@ export default defineComponent({
       width: 100%;
       position: relative;
     }
+  }
+
+  .loading-state, .error-state {
+      height: 150px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      font-size: 12px;
+  }
+
+  .error-state {
+      color: #ff4d4f;
+  }
+
+  .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border-color);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 10px;
+  }
+
+  @keyframes spin {
+      to { transform: rotate(360deg); }
   }
 }
 </style>

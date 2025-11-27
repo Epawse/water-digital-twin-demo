@@ -28,6 +28,7 @@ export default defineComponent({
     const menuItems = [
       { label: '综合态势', icon: '📊', path: '/' },
       { label: '洪水演进', icon: '🌊', path: '/flood' },
+      { label: '降雨分析', icon: '🌧️', path: '/rainfall' },
       { label: '工程演示', icon: '🛠️', path: '/bim-demo' },
       { label: '数据管理', icon: '🗂️', path: '/data' },
       { label: '配置中心', icon: '⚙️', path: '/titleset' },

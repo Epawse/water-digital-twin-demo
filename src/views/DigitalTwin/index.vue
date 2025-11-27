@@ -8,14 +8,6 @@
         <WarningPanel @locate="handleLocate" />
       </div>
 
-      <!-- 降雨热力图控制面板 -->
-      <RainfallHeatmapLayer
-        :viewer="cesiumViewer"
-        :showControls="true"
-        initialRegion="yili"
-        @frameChange="handleRainfallFrameChange"
-      />
-
       <!-- 底部时间轴控制 -->
       <div class="timeline-panel">
         <div class="timeline-header">
@@ -179,10 +171,8 @@ import GlobalLayout from '@/components/GlobalLayout.vue'
 import WaterLevelPanel from '@/modules/FloodControl/WaterLevelPanel.vue'
 import RainMonitorPanel from '@/modules/FloodControl/RainMonitorPanel.vue'
 import WarningPanel from '@/modules/FloodControl/WarningPanel.vue'
-import RainfallHeatmapLayer from '@/components/RainfallHeatmapLayer.vue'
 import { StationMarkerManager } from '@/modules/FloodControl/StationMarker'
 import { FloodEvents } from '@/mock/simData'
-import type { RainfallFrame } from '@/mock/rainfallGrid'
 
 declare const Cesium: any
 
@@ -198,16 +188,6 @@ const mapState = reactive({
 })
 
 const isPanelExpanded = ref(false)
-
-// Cesium viewer 引用（用于降雨热力图）
-const cesiumViewer = computed(() => (window as any).Gviewer)
-
-// 降雨帧变化处理
-const handleRainfallFrameChange = (frame: RainfallFrame | null) => {
-  if (frame) {
-    console.log(`降雨帧更新: ${frame.timestamp}, 最大雨强: ${frame.stats.maxRainfall}mm/h`)
-  }
-}
 
 // ========== 时间轴动画控制 ==========
 const isPlaying = ref(false)

@@ -6,6 +6,7 @@ import Imagery from '../views/SetConfigPages/Imagery.vue'
 import Model from '../views/SetConfigPages/Model.vue'
 import Dashboard from '../views/Dashboard.vue'
 import FloodEvolution from '../views/DigitalTwin/index.vue'
+import RainfallAnalysis from '../views/RainfallAnalysis.vue'
 import TestPostProcess from '../views/TestPostProcess.vue'
 import EngineeringDemo from '../views/EngineeringDemo.vue'
 import DataManagement from '../views/DataManagement.vue'
@@ -20,6 +21,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/flood',
     name: 'FloodEvolution',
     component: FloodEvolution,
+  },
+  {
+    path: '/rainfall',
+    name: 'RainfallAnalysis',
+    component: RainfallAnalysis,
   },
   {
     path: '/bim-demo',

@@ -2,21 +2,35 @@
 	<PannelBox title="预警信息">
 		<template v-slot:content>
 			<div class="warning-panel">
-				<div class="warning-count">
-					<span class="count danger">{{ dangerCount }}</span>
-					<span class="label">红色预警</span>
-					<span class="count warning">{{ warningCount }}</span>
-					<span class="label">黄色预警</span>
+				<div v-if="isLoading" class="loading-state">
+					<div class="spinner"></div>
+					<span>加载中...</span>
 				</div>
-				<div class="warning-list">
-					<div class="warning-item" v-for="station in warningStations" :key="station.id"
-						:class="station.status" @click="$emit('locate', station.id)">
-						<span class="icon">{{ station.status === 'danger' ? '🔴' : '🟡' }}</span>
-						<span class="name">{{ station.name }}</span>
-						<span class="message">{{ getWarningMessage(station) }}</span>
+				<div v-else-if="errorMessage" class="error-state">
+					<span>{{ errorMessage }}</span>
+				</div>
+				<div v-else>
+					<div class="warning-count">
+						<span class="count danger">{{ dangerCount }}</span>
+						<span class="label">红色预警</span>
+						<span class="count warning">{{ warningCount }}</span>
+						<span class="label">黄色预警</span>
 					</div>
-					<div class="no-warning" v-if="warningStations.length === 0">
-						<span>✅ 暂无预警</span>
+					<div class="warning-list">
+						<div class="warning-item" v-for="item in warnings" :key="item.id"
+							:class="item.level.toLowerCase()" @click="$emit('locate', item.file_path || item.id)">
+							<span class="icon">{{ item.level === 'Red' ? '🔴' : '🟡' }}</span>
+							<span class="name">
+								{{ item.message.split(':')[0] }}
+								<span v-if="item.data_source" class="source-tag" :class="item.data_source">
+									{{ item.data_source === 'real' ? '实' : '模' }}
+								</span>
+							</span> <!-- Extract name from message for display -->
+							<span class="message">{{ item.message }}</span>
+						</div>
+						<div class="no-warning" v-if="warnings.length === 0">
+							<span>✅ 暂无预警</span>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -25,36 +39,34 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import PannelBox from '@/components/PannelBox.vue'
-import { SimStations, Station, WarningStations } from '@/mock/simData'
+import { fetchWarnings, WarningItem } from '@/api/backend'
 
 defineEmits(['locate'])
 
-const warningStations = computed(() => {
-	return WarningStations
-})
+const warnings = ref<WarningItem[]>([]);
+const isLoading = ref(true);
+const errorMessage = ref('');
+
+onMounted(async () => {
+  try {
+    const data = await fetchWarnings();
+    warnings.value = data;
+  } catch (e) {
+    errorMessage.value = "加载失败";
+  } finally {
+    isLoading.value = false;
+  }
+});
 
 const dangerCount = computed(() => {
-	return SimStations.filter(s => s.status === 'danger').length
+	return warnings.value.filter(w => w.level === 'Red').length
 })
 
 const warningCount = computed(() => {
-	return SimStations.filter(s => s.status === 'warning').length
+	return warnings.value.filter(w => w.level === 'Yellow').length
 })
-
-const getWarningMessage = (station: Station) => {
-	if (station.type === 'reservoir' || station.type === 'hydrological') {
-		if (station.status === 'danger') {
-			return `水位 ${station.waterLevel}m 超保证`
-		} else {
-			return `水位 ${station.waterLevel}m 超警戒`
-		}
-	} else if (station.type === 'rain') {
-		return `降雨量 ${station.rainfall}mm 偏多`
-	}
-	return ''
-}
 </script>
 
 <style lang="scss" scoped>
@@ -101,15 +113,20 @@ const getWarningMessage = (station: Station) => {
 			cursor: pointer;
 			transition: all 0.2s;
 
-			&.danger {
+			&.red {
 				background: rgba(255, 0, 0, 0.15);
 				border-left: 3px solid #ff0000;
 			}
 
-			&.warning {
+			&.yellow {
 				background: rgba(255, 255, 0, 0.1);
 				border-left: 3px solid #ffff00;
 			}
+            
+            &.blue { /* Assuming blue warning level */
+                background: rgba(0, 0, 255, 0.1);
+                border-left: 3px solid #0000ff;
+            }
 
 			&:hover {
 				transform: translateX(3px);
@@ -124,6 +141,27 @@ const getWarningMessage = (station: Station) => {
 				font-weight: bold;
 				margin-right: 10px;
 				white-space: nowrap;
+				display: flex;
+				align-items: center;
+				gap: 4px;
+			}
+
+			.source-tag {
+				font-size: 9px;
+				padding: 0 3px;
+				border-radius: 2px;
+				
+				&.real {
+					background: rgba(0, 255, 0, 0.2);
+					color: #00ff00;
+					border: 1px solid rgba(0, 255, 0, 0.3);
+				}
+				
+				&.simulated {
+					background: rgba(0, 246, 255, 0.2);
+					color: #00f6ff;
+					border: 1px solid rgba(0, 246, 255, 0.3);
+				}
 			}
 
 			.message {
@@ -140,5 +178,33 @@ const getWarningMessage = (station: Station) => {
 			color: #00ff00;
 		}
 	}
+}
+
+.loading-state, .error-state {
+    height: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+}
+
+.error-state {
+    color: #ff4d4f;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(0, 246, 255, 0.3);
+    border-top-color: #00f6ff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 </style>

@@ -1,61 +1,34 @@
-# Dependencies
-node_modules/
-.pnpm-store/
-
-# Build output
-dist/
-dist-ssr/
-*.local
-
-# Environment files
+# Local environment
 .env
-.env.*
-!.env.example
+.env.*.local
+
+# dependencies
+/node_modules
+/dist
+/build
+/tmp
+/yarn-debug.log*
+/yarn-error.log*
+.npm
+.eslintcache
+.vite-inspect
+*.log
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-.idea/
+.idea
+.vscode
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
-*.sublime-workspace
-*.sublime-project
+*.bak
+*.local
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Testing
-coverage/
-.nyc_output/
-
-# TypeScript cache
-*.tsbuildinfo
-
-# Cesium assets (if copied locally)
-public/Cesium/
-
-# Temp files
-*.tmp
-*.temp
-.cache/
-
-# PDF documents (technical specs)
-*.pdf
+# Screenshots and generated data files
+dashboard_screenshot.png
+flood_screenshot.png
+water-digital.txt
+安全监测数据-MMK发电引水洞/
+backend/venv/
+__pycache__/
+*.pyc
