@@ -1,10 +1,23 @@
 <template>
   <GlobalLayout>
     <div class="dashboard">
+      <!-- 左侧面板区 -->
       <div class="panel-left">
         <ProjectOverview />
+        <!-- 站点快捷操作 -->
+        <div class="quick-stats tech-panel">
+          <div class="panel-header">
+            <span class="title">站点状态</span>
+          </div>
+          <div class="stat-row" v-for="item in stationStats" :key="item.label">
+            <span class="stat-icon">{{ item.icon }}</span>
+            <span class="stat-label">{{ item.label }}</span>
+            <span class="stat-value" :class="item.status">{{ item.value }}</span>
+          </div>
+        </div>
       </div>
 
+      <!-- 右侧工具栏 -->
       <div class="panel-right">
         <div class="toolbar-container">
           <div class="toolbar-btn" @click="isPanelExpanded = !isPanelExpanded" :class="{ 'is-active': isPanelExpanded }" title="底图与风格">
@@ -74,14 +87,34 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, computed } from 'vue'
 import GlobalLayout from '@/components/GlobalLayout.vue'
 import ProjectOverview from '@/components/ProjectOverview.vue'
 import { StationMarkerManager } from '@/modules/FloodControl/StationMarker'
+import { SimStations, FloodEvents, IoTDevices } from '@/mock/simData'
 
 declare const Cesium: any
 
 const isPanelExpanded = ref(false)
+
+// 站点统计数据
+const stationStats = computed(() => {
+  const reservoirs = SimStations.filter(s => s.type === 'reservoir')
+  const hydro = SimStations.filter(s => s.type === 'hydrological')
+  const rain = SimStations.filter(s => s.type === 'rain')
+  const warnings = SimStations.filter(s => s.status === 'warning' || s.status === 'danger')
+  const activeEvents = FloodEvents.filter(e => e.status === 'active')
+  const onlineDevices = IoTDevices.filter(d => d.status === 'online')
+
+  return [
+    { icon: '🏊', label: '水库站', value: `${reservoirs.length} 座`, status: 'normal' },
+    { icon: '📊', label: '水文站', value: `${hydro.length} 座`, status: 'normal' },
+    { icon: '🌧️', label: '雨量站', value: `${rain.length} 座`, status: 'normal' },
+    { icon: '⚠️', label: '预警站点', value: `${warnings.length} 座`, status: warnings.length > 0 ? 'warning' : 'normal' },
+    { icon: '🌊', label: '活动事件', value: `${activeEvents.length} 个`, status: activeEvents.length > 0 ? 'danger' : 'normal' },
+    { icon: '📡', label: '在线设备', value: `${onlineDevices.length}/${IoTDevices.length}`, status: 'normal' },
+  ]
+})
 
 const filterState = reactive({
   enabled: true,
@@ -260,9 +293,62 @@ onMounted(() => {
   position: absolute;
   left: 110px;
   top: 120px;
-  width: 320px;
+  width: 280px;
   pointer-events: auto;
   z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgba(0, 246, 255, 0.3); border-radius: 2px; }
+}
+
+.quick-stats {
+  padding: 12px;
+
+  .panel-header {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0, 246, 255, 0.2);
+
+    .title {
+      font-size: 13px;
+      font-weight: bold;
+      color: #00f6ff;
+    }
+  }
+
+  .stat-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+    &:last-child { border-bottom: none; }
+
+    .stat-icon {
+      font-size: 14px;
+      margin-right: 8px;
+    }
+
+    .stat-label {
+      flex: 1;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .stat-value {
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      color: #00f6ff;
+
+      &.warning { color: #ffbd2e; }
+      &.danger { color: #f44336; }
+    }
+  }
 }
 
 .panel-right {

@@ -22,10 +22,14 @@ export interface FloodEvent {
   id: string
   name: string
   severity: 'mild' | 'medium' | 'severe'
+  level: 'red' | 'orange' | 'yellow' | 'blue'  // 预警等级
+  status: 'pending' | 'active' | 'resolved'    // 事件状态
   start: string
   end: string
   region: string
+  basin: string                                 // 流域名称
   center: { lng: number; lat: number }
+  affectedArea: number                          // 影响面积 km²
   description: string
   products: {
     inundationGeoJson: string
@@ -138,10 +142,14 @@ export const FloodEvents: FloodEvent[] = [
     id: 'evt_mild',
     name: '中小洪水演练',
     severity: 'mild',
+    level: 'blue',
+    status: 'resolved',
     start: '2025-09-01T00:00:00Z',
     end: '2025-09-02T00:00:00Z',
     region: '喀什-和田流域',
+    basin: '和田河',
     center: { lng: 79.6, lat: 38.1 },
+    affectedArea: 450,
     description: '短历时中小洪水，验证站点联动与淹没范围展示。',
     products: {
       inundationGeoJson: '/mock/flood/mild/inundation.geojson',
@@ -155,10 +163,14 @@ export const FloodEvents: FloodEvent[] = [
     id: 'evt_large',
     name: '大洪水演练',
     severity: 'medium',
+    level: 'orange',
+    status: 'active',
     start: '2025-09-05T00:00:00Z',
     end: '2025-09-06T12:00:00Z',
     region: '塔里木干流',
+    basin: '塔里木河',
     center: { lng: 82.5, lat: 40.7 },
+    affectedArea: 1280,
     description: '覆盖主干流的洪水过程，包含分时淹没面与水位过程线。',
     products: {
       inundationGeoJson: '/mock/flood/large/inundation.geojson',
@@ -172,10 +184,14 @@ export const FloodEvents: FloodEvent[] = [
     id: 'evt_extreme',
     name: '特大洪水演练',
     severity: 'severe',
+    level: 'red',
+    status: 'active',
     start: '2025-09-10T00:00:00Z',
     end: '2025-09-12T00:00:00Z',
     region: '伊犁河流域',
+    basin: '伊犁河',
     center: { lng: 81.2, lat: 43.8 },
+    affectedArea: 2560,
     description: '特大洪水假设场景，用于压力测试可视化与交互。',
     products: {
       inundationGeoJson: '/mock/flood/extreme/inundation.geojson',
@@ -189,10 +205,14 @@ export const FloodEvents: FloodEvent[] = [
     id: 'evt_irtysh_spring',
     name: '额尔齐斯河春汛',
     severity: 'medium',
+    level: 'yellow',
+    status: 'pending',
     start: '2025-04-15T00:00:00Z',
     end: '2025-04-20T00:00:00Z',
     region: '额尔齐斯河流域',
+    basin: '额尔齐斯河',
     center: { lng: 88.5, lat: 47.5 },
+    affectedArea: 980,
     description: '春季融雪性洪水，阿尔泰山区积雪快速消融引发。',
     products: {
       inundationGeoJson: '/mock/flood/irtysh_spring/inundation.geojson',
@@ -206,10 +226,14 @@ export const FloodEvents: FloodEvent[] = [
     id: 'evt_manas_summer',
     name: '玛纳斯河夏季洪水',
     severity: 'mild',
+    level: 'blue',
+    status: 'resolved',
     start: '2025-07-20T00:00:00Z',
     end: '2025-07-22T00:00:00Z',
     region: '玛纳斯河流域',
+    basin: '玛纳斯河',
     center: { lng: 86.0, lat: 44.0 },
+    affectedArea: 320,
     description: '夏季暴雨叠加冰川融水形成的洪水过程。',
     products: {
       inundationGeoJson: '/mock/flood/manas_summer/inundation.geojson',
@@ -223,10 +247,14 @@ export const FloodEvents: FloodEvent[] = [
     id: 'evt_kaidu_flood',
     name: '开都河洪水演练',
     severity: 'medium',
+    level: 'yellow',
+    status: 'active',
     start: '2025-08-01T00:00:00Z',
     end: '2025-08-04T00:00:00Z',
     region: '开都河-博斯腾湖',
+    basin: '开都河',
     center: { lng: 86.5, lat: 42.0 },
+    affectedArea: 860,
     description: '天山南坡暴雨引发的开都河洪水，影响博斯腾湖水位。',
     products: {
       inundationGeoJson: '/mock/flood/kaidu/inundation.geojson',
@@ -240,10 +268,14 @@ export const FloodEvents: FloodEvent[] = [
     id: 'evt_yarkant_glof',
     name: '叶尔羌河冰湖溃决洪水',
     severity: 'severe',
+    level: 'red',
+    status: 'active',
     start: '2025-08-15T00:00:00Z',
     end: '2025-08-18T00:00:00Z',
     region: '叶尔羌河流域',
+    basin: '叶尔羌河',
     center: { lng: 77.0, lat: 38.0 },
+    affectedArea: 1850,
     description: '喀喇昆仑山冰川湖溃决(GLOF)引发的特大洪水，突发性强。',
     products: {
       inundationGeoJson: '/mock/flood/yarkant_glof/inundation.geojson',
@@ -310,13 +342,20 @@ export const IoTDevices: IoTDevice[] = [
 
 export const ThreeDResources: ThreeDResource[] = [
   {
-    id: 'bim_shenzhen_demo',
-    name: '开源深圳场景（重定位新疆）',
-    source: '开源示例数据',
-    // 使用开源示例（原项目中的深圳 3D 数据），HTTP 避免证书问题
-    tilesetUrl: 'http://data.marsgis.cn/3dtiles/jzw-shenzhen/tileset.json',
-    target: { lng: 84.0, lat: 44.0, height: 500 },
-    note: '通过平移矩阵放置到新疆示例点，用于工程/BIM演示。'
+    id: 'urumqi_buildings',
+    name: '乌鲁木齐市建筑群',
+    source: '程序化生成',
+    tilesetUrl: '', // 不再使用外部3D Tiles，改用Entity生成
+    target: { lng: 87.617, lat: 43.792, height: 800 },
+    note: '使用Cesium Entity程序化生成的乌鲁木齐市建筑模拟数据。'
+  },
+  {
+    id: 'urumqi_water_facilities',
+    name: '乌鲁木齐水利设施',
+    source: '程序化生成',
+    tilesetUrl: '',
+    target: { lng: 87.5, lat: 43.7, height: 800 },
+    note: '模拟水利基础设施：水库管理站、泵站、闸站等。'
   }
 ]
 

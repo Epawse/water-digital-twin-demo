@@ -2,7 +2,7 @@
   <div class="overview-panel tech-panel">
     <div class="panel-header">
       <span class="deco-line"></span>
-      <span class="title">PROJECT OVERVIEW</span>
+      <span class="title">项目总览</span>
       <span class="deco-line"></span>
     </div>
 
@@ -70,7 +70,7 @@ export default defineComponent({
 <style lang="scss" scoped>
 .overview-panel {
   position: absolute;
-  top: 120px; /* Align with Nav */
+  top: 120px; /* 与导航菜单顶部对齐 */
   left: 110px; /* Nav width (70) + left (20) + gap (20) */
   width: 260px;
   padding: 15px;

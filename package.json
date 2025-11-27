@@ -14,6 +14,7 @@
     "axios": "^1.6.0",
     "cesium": "1.82.0",
     "cesium-navigation-es6": "^3.0.9",
+    "echarts": "^6.0.0",
     "element-plus": "^2.4.2",
     "lodash": "^4.17.21",
     "nprogress": "^0.2.0",
@@ -23,6 +24,7 @@
     "vue-router": "^4.2.5"
   },
   "devDependencies": {
+    "@types/echarts": "^4.9.22",
     "@types/lodash": "^4.14.200",
     "@types/node": "^20.9.0",
     "@types/nprogress": "^0.2.3",

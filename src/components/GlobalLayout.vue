@@ -8,7 +8,10 @@
       <MainHeader />
       <NavigationMenu />
       <AIChat />
-      
+
+      <!-- 全局告警通知 -->
+      <AlertNotification ref="globalAlertRef" />
+
       <!-- Slot for Page Specific Content -->
       <div class="page-content">
         <slot></slot>
@@ -18,11 +21,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, ref } from 'vue'
 import CesiumMap from '@/components/CesiumMap.vue'
 import MainHeader from '@/components/MainHeader.vue'
 import NavigationMenu from '@/components/NavigationMenu.vue'
 import AIChat from '@/components/AIChat.vue'
+import AlertNotification from '@/components/AlertNotification.vue'
 
 export default defineComponent({
   name: 'GlobalLayout',
@@ -30,7 +34,12 @@ export default defineComponent({
     CesiumMap,
     MainHeader,
     NavigationMenu,
-    AIChat
+    AIChat,
+    AlertNotification
+  },
+  setup() {
+    const globalAlertRef = ref<InstanceType<typeof AlertNotification> | null>(null)
+    return { globalAlertRef }
   }
 })
 </script>

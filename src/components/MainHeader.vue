@@ -12,7 +12,7 @@
          <!-- Decorative center metrics or status moved to left -->
         <div class="status-indicator">
           <span class="dot pulsing"></span>
-          <span>SYSTEM ONLINE</span>
+          <span>系统运行中</span>
         </div>
       </div>
 
@@ -96,9 +96,9 @@ export default defineComponent({
     height: 100%;
     display: flex;
     justify-content: space-between;
-    align-items: flex-start; /* Top align mainly */
+    align-items: center; /* 垂直居中对齐 */
     padding: 0 40px;
-    
+
     .left-section, .right-section {
       width: 25%; /* Fixed width for balance */
       display: flex;
@@ -110,7 +110,7 @@ export default defineComponent({
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 60px; /* Slight adj */
+      height: auto;
 
       .project-title {
         display: flex;

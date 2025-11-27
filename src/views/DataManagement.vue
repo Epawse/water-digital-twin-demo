@@ -254,6 +254,124 @@
         </transition>
       </div>
 
+      <!-- 中下方图表统计面板 -->
+      <div class="chart-panel tech-panel" v-show="!isPanelCollapsed">
+        <div class="chart-header">
+          <span class="chart-title">数据统计分析</span>
+          <div class="chart-tabs">
+            <span :class="{ active: chartType === 'waterLevel' }" @click="chartType = 'waterLevel'">水位趋势</span>
+            <span :class="{ active: chartType === 'rainfall' }" @click="chartType = 'rainfall'">降雨分布</span>
+            <span :class="{ active: chartType === 'status' }" @click="chartType = 'status'">设备状态</span>
+          </div>
+        </div>
+        <div class="chart-body">
+          <!-- 水位趋势图 -->
+          <div v-show="chartType === 'waterLevel'" class="chart-content">
+            <svg width="100%" height="160" viewBox="0 0 400 160" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="waterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style="stop-color:rgba(0, 246, 255, 0.5)" />
+                  <stop offset="100%" style="stop-color:rgba(0, 246, 255, 0)" />
+                </linearGradient>
+              </defs>
+              <!-- 网格线 -->
+              <g stroke="rgba(255,255,255,0.1)" stroke-width="1">
+                <line x1="40" y1="20" x2="400" y2="20" />
+                <line x1="40" y1="50" x2="400" y2="50" />
+                <line x1="40" y1="80" x2="400" y2="80" />
+                <line x1="40" y1="110" x2="400" y2="110" />
+                <line x1="40" y1="140" x2="400" y2="140" />
+              </g>
+              <!-- Y轴标签 -->
+              <g fill="#8eb9d9" font-size="10">
+                <text x="35" y="24" text-anchor="end">50m</text>
+                <text x="35" y="54" text-anchor="end">40m</text>
+                <text x="35" y="84" text-anchor="end">30m</text>
+                <text x="35" y="114" text-anchor="end">20m</text>
+                <text x="35" y="144" text-anchor="end">10m</text>
+              </g>
+              <!-- 警戒线 -->
+              <line x1="40" y1="65" x2="400" y2="65" stroke="#ffbd2e" stroke-width="1" stroke-dasharray="4,4" />
+              <text x="395" y="62" fill="#ffbd2e" font-size="9" text-anchor="end">警戒水位</text>
+              <!-- 水位曲线 -->
+              <path d="M40,100 Q80,95 120,85 T200,75 T280,70 T360,80 L360,140 L40,140 Z" fill="url(#waterGrad)" />
+              <path d="M40,100 Q80,95 120,85 T200,75 T280,70 T360,80" fill="none" stroke="#00f6ff" stroke-width="2" />
+              <!-- 数据点 -->
+              <circle cx="120" cy="85" r="3" fill="#fff" />
+              <circle cx="200" cy="75" r="3" fill="#fff" />
+              <circle cx="280" cy="70" r="3" fill="#fff" />
+              <circle cx="360" cy="80" r="3" fill="#fff" />
+              <!-- X轴标签 -->
+              <g fill="#8eb9d9" font-size="9">
+                <text x="40" y="155">00:00</text>
+                <text x="120" y="155">06:00</text>
+                <text x="200" y="155">12:00</text>
+                <text x="280" y="155">18:00</text>
+                <text x="360" y="155">24:00</text>
+              </g>
+            </svg>
+            <div class="chart-legend">
+              <span><i class="dot water"></i>实时水位</span>
+              <span><i class="dot warning"></i>警戒水位 35m</span>
+            </div>
+          </div>
+          <!-- 降雨分布图 -->
+          <div v-show="chartType === 'rainfall'" class="chart-content">
+            <div class="bar-chart">
+              <div class="bar-item" v-for="(r, i) in rainfallData" :key="i">
+                <div class="bar-wrapper">
+                  <div class="bar" :style="{ height: r.value + '%', background: r.color }"></div>
+                </div>
+                <span class="bar-label">{{ r.label }}</span>
+                <span class="bar-value">{{ r.mm }}mm</span>
+              </div>
+            </div>
+            <div class="chart-legend">
+              <span><i class="dot light"></i>小雨 (&lt;10mm)</span>
+              <span><i class="dot moderate"></i>中雨 (10-25mm)</span>
+              <span><i class="dot heavy"></i>大雨 (&gt;25mm)</span>
+            </div>
+          </div>
+          <!-- 设备状态图 -->
+          <div v-show="chartType === 'status'" class="chart-content">
+            <div class="status-chart">
+              <div class="pie-container">
+                <svg width="140" height="140" viewBox="0 0 140 140">
+                  <circle cx="70" cy="70" r="55" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="20" />
+                  <circle cx="70" cy="70" r="55" fill="none" stroke="#00ff96" stroke-width="20"
+                    :stroke-dasharray="`${onlinePercent * 3.45} 345`" stroke-dashoffset="86" />
+                  <circle cx="70" cy="70" r="55" fill="none" stroke="#ff5050" stroke-width="20"
+                    :stroke-dasharray="`${offlinePercent * 3.45} 345`" :stroke-dashoffset="`${86 - onlinePercent * 3.45}`" />
+                  <text x="70" y="65" text-anchor="middle" fill="#fff" font-size="20" font-weight="bold">{{ onlinePercent }}%</text>
+                  <text x="70" y="82" text-anchor="middle" fill="#8eb9d9" font-size="10">在线率</text>
+                </svg>
+              </div>
+              <div class="status-details">
+                <div class="detail-row">
+                  <span class="status-dot online"></span>
+                  <span class="detail-label">在线设备</span>
+                  <span class="detail-value">{{ onlineIoTCount }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="status-dot offline"></span>
+                  <span class="detail-label">离线设备</span>
+                  <span class="detail-value">{{ iotDevices.length - onlineIoTCount }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="status-dot warning"></span>
+                  <span class="detail-label">预警站点</span>
+                  <span class="detail-value">{{ warningCount }}</span>
+                </div>
+                <div class="detail-row total">
+                  <span class="detail-label">设备总数</span>
+                  <span class="detail-value">{{ iotDevices.length }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 右下角统计面板 -->
       <div class="panel-stats">
         <div class="stat-card">
@@ -316,6 +434,28 @@ const isMapPanelExpanded = ref(false)
 const activeTab = ref<'stations' | 'floods' | 'iot' | 'models'>('stations')
 const stationFilter = ref<'all' | 'reservoir' | 'hydrological' | 'rain'>('all')
 const iotFilter = ref<'all' | 'online' | 'offline'>('all')
+const chartType = ref<'waterLevel' | 'rainfall' | 'status'>('waterLevel')
+
+// 降雨数据（模拟）
+const rainfallData = computed(() => {
+  const rainStations = stations.filter(s => s.type === 'rain')
+  return rainStations.slice(0, 6).map(s => {
+    const mm = s.rainfall || 0
+    let color = '#a6f2cc' // 小雨
+    if (mm >= 25) color = '#0096c8' // 大雨
+    else if (mm >= 10) color = '#00c864' // 中雨
+    return {
+      label: s.name.replace('站', '').slice(0, 3),
+      mm,
+      value: Math.min(mm * 3, 100),
+      color
+    }
+  })
+})
+
+// 在线率
+const onlinePercent = computed(() => Math.round((onlineIoTCount.value / iotDevices.length) * 100))
+const offlinePercent = computed(() => 100 - onlinePercent.value)
 
 // ========== 底图处理逻辑（与首页保持一致）==========
 const filterState = reactive({
@@ -1198,5 +1338,201 @@ onMounted(() => {
 // IoT 表格适配
 .list-header.iot + .list-body .list-row {
   grid-template-columns: 1.5fr 1fr 1fr 1.2fr 0.6fr 0.8fr;
+}
+
+// 图表统计面板
+.chart-panel {
+  position: absolute;
+  left: 110px;
+  bottom: 30px;
+  width: 450px;
+  background: rgba(0, 20, 40, 0.9);
+  border: 1px solid rgba(0, 246, 255, 0.2);
+  border-radius: 8px;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(0, 246, 255, 0.15);
+    background: rgba(0, 246, 255, 0.05);
+
+    .chart-title {
+      font-size: 13px;
+      color: #00f6ff;
+      font-weight: 500;
+    }
+
+    .chart-tabs {
+      display: flex;
+      gap: 4px;
+
+      span {
+        padding: 4px 10px;
+        font-size: 11px;
+        color: #8eb9d9;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+          background: rgba(0, 246, 255, 0.1);
+          border-color: rgba(0, 246, 255, 0.3);
+        }
+
+        &.active {
+          background: rgba(0, 246, 255, 0.2);
+          border-color: #00f6ff;
+          color: #00f6ff;
+        }
+      }
+    }
+  }
+
+  .chart-body {
+    padding: 12px;
+  }
+
+  .chart-content {
+    animation: fadeIn 0.2s ease;
+  }
+
+  .chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 10px;
+    font-size: 10px;
+    color: #8eb9d9;
+
+    span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+
+      &.water { background: #00f6ff; }
+      &.warning { background: #ffbd2e; }
+      &.light { background: #a6f2cc; }
+      &.moderate { background: #00c864; }
+      &.heavy { background: #0096c8; }
+    }
+  }
+
+  // 柱状图
+  .bar-chart {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    height: 130px;
+    padding: 10px 0;
+
+    .bar-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+
+      .bar-wrapper {
+        width: 30px;
+        height: 100px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px 4px 0 0;
+        display: flex;
+        align-items: flex-end;
+        overflow: hidden;
+
+        .bar {
+          width: 100%;
+          border-radius: 4px 4px 0 0;
+          transition: height 0.3s ease;
+        }
+      }
+
+      .bar-label {
+        font-size: 10px;
+        color: #8eb9d9;
+      }
+
+      .bar-value {
+        font-size: 11px;
+        color: #00f6ff;
+        font-weight: 500;
+      }
+    }
+  }
+
+  // 设备状态图
+  .status-chart {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 10px;
+
+    .pie-container {
+      flex-shrink: 0;
+    }
+
+    .status-details {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .detail-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .status-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+
+          &.online { background: #00ff96; }
+          &.offline { background: #ff5050; }
+          &.warning { background: #ffbd2e; }
+        }
+
+        .detail-label {
+          flex: 1;
+          font-size: 12px;
+          color: #8eb9d9;
+        }
+
+        .detail-value {
+          font-size: 14px;
+          color: #fff;
+          font-weight: 500;
+        }
+
+        &.total {
+          margin-top: 8px;
+          padding-top: 8px;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+          .detail-label {
+            color: #fff;
+          }
+
+          .detail-value {
+            color: #00f6ff;
+            font-size: 16px;
+          }
+        }
+      }
+    }
+  }
 }
 </style>

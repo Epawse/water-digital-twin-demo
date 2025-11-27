@@ -8,6 +8,78 @@
         <WarningPanel @locate="handleLocate" />
       </div>
 
+      <!-- 降雨热力图控制面板 -->
+      <RainfallHeatmapLayer
+        :viewer="cesiumViewer"
+        :showControls="true"
+        initialRegion="yili"
+        @frameChange="handleRainfallFrameChange"
+      />
+
+      <!-- 底部时间轴控制 -->
+      <div class="timeline-panel">
+        <div class="timeline-header">
+          <span class="timeline-title">洪水演进时间轴</span>
+          <span class="current-time tech-font">{{ currentTimeDisplay }}</span>
+        </div>
+        <div class="timeline-body">
+          <div class="timeline-controls">
+            <button class="control-btn" @click="skipToStart" title="跳到开始">
+              <svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" fill="currentColor"/></svg>
+            </button>
+            <button class="control-btn" @click="skipBackward" title="后退">
+              <svg viewBox="0 0 24 24" width="16" height="16"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z" fill="currentColor"/></svg>
+            </button>
+            <button class="control-btn play" @click="togglePlay" :title="isPlaying ? '暂停' : '播放'">
+              <svg v-if="!isPlaying" viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+              <svg v-else viewBox="0 0 24 24" width="20" height="20"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/></svg>
+            </button>
+            <button class="control-btn" @click="skipForward" title="前进">
+              <svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z" fill="currentColor"/></svg>
+            </button>
+            <button class="control-btn" @click="skipToEnd" title="跳到结束">
+              <svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" fill="currentColor"/></svg>
+            </button>
+            <select v-model.number="playSpeed" class="speed-select">
+              <option :value="500">2x</option>
+              <option :value="1000">1x</option>
+              <option :value="2000">0.5x</option>
+            </select>
+          </div>
+          <div class="timeline-slider">
+            <div class="slider-track">
+              <div class="slider-progress" :style="{ width: progressPercent + '%' }"></div>
+              <input
+                type="range"
+                v-model.number="currentHour"
+                :min="0"
+                :max="totalHours"
+                class="slider-input"
+              />
+            </div>
+            <div class="time-marks">
+              <span v-for="mark in timeMarks" :key="mark.hour" class="time-mark" :style="{ left: mark.percent + '%' }">
+                {{ mark.label }}
+              </span>
+            </div>
+          </div>
+          <div class="timeline-info">
+            <div class="info-item">
+              <span class="info-label">当前事件</span>
+              <span class="info-value">{{ currentEventName }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">淹没面积</span>
+              <span class="info-value warning">{{ currentFloodArea }} km²</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">最大水深</span>
+              <span class="info-value">{{ currentMaxDepth }} m</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Custom Right Controls for Flood -->
       <div class="panel-right">
         <!-- 垂直工具栏 -->
@@ -102,13 +174,15 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { onMounted, onUnmounted, reactive, ref, watch, computed } from 'vue'
 import GlobalLayout from '@/components/GlobalLayout.vue'
 import WaterLevelPanel from '@/modules/FloodControl/WaterLevelPanel.vue'
 import RainMonitorPanel from '@/modules/FloodControl/RainMonitorPanel.vue'
 import WarningPanel from '@/modules/FloodControl/WarningPanel.vue'
+import RainfallHeatmapLayer from '@/components/RainfallHeatmapLayer.vue'
 import { StationMarkerManager } from '@/modules/FloodControl/StationMarker'
 import { FloodEvents } from '@/mock/simData'
+import type { RainfallFrame } from '@/mock/rainfallGrid'
 
 declare const Cesium: any
 
@@ -124,6 +198,131 @@ const mapState = reactive({
 })
 
 const isPanelExpanded = ref(false)
+
+// Cesium viewer 引用（用于降雨热力图）
+const cesiumViewer = computed(() => (window as any).Gviewer)
+
+// 降雨帧变化处理
+const handleRainfallFrameChange = (frame: RainfallFrame | null) => {
+  if (frame) {
+    console.log(`降雨帧更新: ${frame.timestamp}, 最大雨强: ${frame.stats.maxRainfall}mm/h`)
+  }
+}
+
+// ========== 时间轴动画控制 ==========
+const isPlaying = ref(false)
+const playSpeed = ref(1000)
+const currentHour = ref(0)
+const totalHours = 72 // 模拟72小时洪水演进
+let playInterval: ReturnType<typeof setInterval> | null = null
+
+// 模拟起始时间
+const startTime = new Date('2025-09-01T00:00:00')
+
+// 当前时间显示
+const currentTimeDisplay = computed(() => {
+  const current = new Date(startTime.getTime() + currentHour.value * 3600000)
+  return current.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+})
+
+// 进度百分比
+const progressPercent = computed(() => (currentHour.value / totalHours) * 100)
+
+// 时间刻度
+const timeMarks = computed(() => {
+  const marks = []
+  for (let h = 0; h <= totalHours; h += 12) {
+    const time = new Date(startTime.getTime() + h * 3600000)
+    marks.push({
+      hour: h,
+      percent: (h / totalHours) * 100,
+      label: `${time.getMonth() + 1}/${time.getDate()} ${time.getHours()}:00`
+    })
+  }
+  return marks
+})
+
+// 当前事件信息（模拟数据）
+const currentEvent = computed(() => FloodEvents.find(e => e.id === eventState.id))
+const currentEventName = computed(() => currentEvent.value?.name || '无')
+const currentFloodArea = computed(() => {
+  if (!currentEvent.value) return 0
+  // 模拟淹没面积随时间变化
+  const base = currentEvent.value.affectedArea
+  const progress = currentHour.value / totalHours
+  const peakAt = 0.4 // 峰值在40%时间点
+  const factor = progress < peakAt
+    ? progress / peakAt
+    : 1 - (progress - peakAt) / (1 - peakAt) * 0.3
+  return Math.round(base * factor)
+})
+const currentMaxDepth = computed(() => {
+  const base = 3.5
+  const progress = currentHour.value / totalHours
+  const peakAt = 0.4
+  const factor = progress < peakAt
+    ? progress / peakAt
+    : 1 - (progress - peakAt) / (1 - peakAt) * 0.5
+  return (base * factor).toFixed(1)
+})
+
+// 播放控制
+const togglePlay = () => {
+  if (isPlaying.value) {
+    stopPlay()
+  } else {
+    startPlay()
+  }
+}
+
+const startPlay = () => {
+  if (playInterval) clearInterval(playInterval)
+  isPlaying.value = true
+  playInterval = setInterval(() => {
+    if (currentHour.value >= totalHours) {
+      currentHour.value = 0
+    } else {
+      currentHour.value++
+    }
+  }, playSpeed.value)
+}
+
+const stopPlay = () => {
+  isPlaying.value = false
+  if (playInterval) {
+    clearInterval(playInterval)
+    playInterval = null
+  }
+}
+
+const skipToStart = () => {
+  currentHour.value = 0
+}
+
+const skipToEnd = () => {
+  currentHour.value = totalHours
+}
+
+const skipBackward = () => {
+  currentHour.value = Math.max(0, currentHour.value - 1)
+}
+
+const skipForward = () => {
+  currentHour.value = Math.min(totalHours, currentHour.value + 1)
+}
+
+// 监听播放速度变化
+watch(playSpeed, () => {
+  if (isPlaying.value) {
+    stopPlay()
+    startPlay()
+  }
+})
 
 const tdtKey = '23cffd438607efdc57c79b679ac2bae9'
 let originalLayers: any[] = []
@@ -405,6 +604,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   hideAllFloodLayers()
+  stopPlay() // 停止时间轴播放
 })
 </script>
 
@@ -420,13 +620,13 @@ onUnmounted(() => {
   .panel-left {
     position: absolute;
     left: 110px;
-    top: 100px;
+    top: 120px;
     width: 320px;
     display: flex;
     flex-direction: column;
     gap: 15px;
     pointer-events: auto;
-    max-height: calc(100vh - 120px);
+    max-height: calc(100vh - 140px);
     overflow-y: auto;
     
     &::-webkit-scrollbar { width: 4px; }
@@ -636,6 +836,183 @@ onUnmounted(() => {
               color: #00e1ff;
             }
           }
+        }
+      }
+    }
+  }
+}
+
+// 时间轴面板样式
+.timeline-panel {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 700px;
+  background: rgba(0, 20, 40, 0.9);
+  border: 1px solid rgba(0, 246, 255, 0.3);
+  border-radius: 8px;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+
+  .timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(0, 246, 255, 0.2);
+    background: rgba(0, 246, 255, 0.05);
+
+    .timeline-title {
+      font-size: 13px;
+      color: #00f6ff;
+      font-weight: 500;
+    }
+
+    .current-time {
+      font-size: 14px;
+      color: #fff;
+    }
+  }
+
+  .timeline-body {
+    padding: 12px 16px;
+  }
+
+  .timeline-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    .control-btn {
+      width: 32px;
+      height: 32px;
+      background: transparent;
+      border: 1px solid rgba(0, 246, 255, 0.3);
+      border-radius: 4px;
+      color: #00f6ff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+
+      &:hover {
+        background: rgba(0, 246, 255, 0.2);
+        border-color: #00f6ff;
+      }
+
+      &.play {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(0, 246, 255, 0.1);
+        border-color: #00f6ff;
+      }
+    }
+
+    .speed-select {
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(0, 246, 255, 0.3);
+      border-radius: 4px;
+      color: #8eb9d9;
+      font-size: 11px;
+      cursor: pointer;
+      outline: none;
+
+      option {
+        background: #0a0d1a;
+      }
+    }
+  }
+
+  .timeline-slider {
+    margin-bottom: 12px;
+    position: relative;
+
+    .slider-track {
+      position: relative;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: visible;
+
+      .slider-progress {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        background: linear-gradient(90deg, #00f6ff, #00c8ff);
+        border-radius: 3px;
+        transition: width 0.1s linear;
+      }
+
+      .slider-input {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 100%;
+        height: 20px;
+        transform: translateY(-50%);
+        -webkit-appearance: none;
+        background: transparent;
+        cursor: pointer;
+
+        &::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 14px;
+          height: 14px;
+          background: #00f6ff;
+          border-radius: 50%;
+          border: 2px solid #fff;
+          cursor: pointer;
+          box-shadow: 0 0 8px rgba(0, 246, 255, 0.6);
+        }
+      }
+    }
+
+    .time-marks {
+      position: relative;
+      height: 20px;
+      margin-top: 8px;
+
+      .time-mark {
+        position: absolute;
+        transform: translateX(-50%);
+        font-size: 9px;
+        color: #8eb9d9;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .timeline-info {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0, 246, 255, 0.1);
+
+    .info-item {
+      text-align: center;
+
+      .info-label {
+        display: block;
+        font-size: 10px;
+        color: #8eb9d9;
+        margin-bottom: 4px;
+      }
+
+      .info-value {
+        font-size: 14px;
+        color: #fff;
+        font-weight: 500;
+
+        &.warning {
+          color: #ffbd2e;
         }
       }
     }

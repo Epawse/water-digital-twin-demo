@@ -157,13 +157,12 @@ export class StationMarkerManager {
     `
 
     if (station.type === 'reservoir') {
-      const statusText = station.status === 'danger' ? '⚠️ 超保证' : 
+      const statusText = station.status === 'danger' ? '⚠️ 超保证' :
                          station.status === 'warning' ? '⚡ 超警戒' : '✅ 正常'
       description += `
         <tr><td>当前水位:</td><td style="color: ${this.getStatusHtmlColor(station.status)}">${station.waterLevel} m</td></tr>
         <tr><td>警戒水位:</td><td>${station.warningLevel} m</td></tr>
         <tr><td>保证水位:</td><td>${station.guaranteeLevel} m</td></tr>
-        <tr><td>总库容:</td><td>${station.capacity}</td></tr>
         <tr><td>入库流量:</td><td>${station.inflow} m³/s</td></tr>
         <tr><td>出库流量:</td><td>${station.outflow} m³/s</td></tr>
         <tr><td>运行状态:</td><td>${statusText}</td></tr>
