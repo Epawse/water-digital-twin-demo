@@ -6,7 +6,7 @@
         <div class="panel-header" @click="isPanelCollapsed = !isPanelCollapsed">
           <div class="header-content">
             <h2>数据与模型管理</h2>
-            <p v-if="!isPanelCollapsed">集中管理模拟数据源与配置，供各页面调度使用</p>
+            <p v-if="!isPanelCollapsed">集中管理后端数据源与配置</p>
           </div>
           <span class="collapse-btn" :class="{ collapsed: isPanelCollapsed }">
             <svg viewBox="0 0 24 24" width="16" height="16">
@@ -18,13 +18,13 @@
         <template v-if="!isPanelCollapsed">
           <!-- 标签页切换 -->
           <div class="tab-bar">
-            <div class="tab-item" :class="{ active: activeTab === 'stations' }" @click="activeTab = 'stations'">
-              <span class="tab-icon">📍</span>监测站点
-              <span class="tab-count">{{ stationFileCount }}</span>
+            <div class="tab-item" :class="{ active: activeTab === 'sensors' }" @click="activeTab = 'sensors'">
+              <span class="tab-icon">📍</span>传感器
+              <span class="tab-count">{{ sensors.length }}</span>
             </div>
-            <div class="tab-item" :class="{ active: activeTab === 'floods' }" @click="activeTab = 'floods'">
-              <span class="tab-icon">🌊</span>洪水事件
-              <span class="tab-count">{{ events.length }}</span>
+            <div class="tab-item" :class="{ active: activeTab === 'warnings' }" @click="activeTab = 'warnings'">
+              <span class="tab-icon">⚠️</span>告警
+              <span class="tab-count">{{ warningCount }}</span>
             </div>
             <div class="tab-item" :class="{ active: activeTab === 'iot' }" @click="activeTab = 'iot'">
               <span class="tab-icon">📡</span>IoT设备
@@ -38,84 +38,106 @@
 
           <!-- 内容区域 -->
           <div class="panel-content">
-            <!-- 监测站点 (File Browser) -->
-            <div v-show="activeTab === 'stations'" class="content-section">
-              <div class="section-header">
-                <span>监测数据目录 ({{ stationFileCount }} 文件)</span>
+            <!-- 传感器 -->
+            <div v-show="activeTab === 'sensors'" class="content-section">
+            <div class="section-header">
+              <span>传感器列表</span>
+              <div class="filter-group">
+                <span class="filter-btn" :class="{ active: sensorFilter === 'all' }" @click="sensorFilter = 'all'">全部</span>
+                <span class="filter-btn" :class="{ active: sensorFilter === 'real' }" @click="sensorFilter = 'real'">真实</span>
+                <span class="filter-btn" :class="{ active: sensorFilter === 'sim' }" @click="sensorFilter = 'sim'">模拟</span>
+                <input class="search-input" v-model="sensorKeyword" placeholder="搜索编号" />
               </div>
-              <div class="file-browser">
-                <div class="file-tree">
-                  <!-- Level 1: Categories/Directories -->
-                  <div class="tree-node" v-for="node in activeStationGroups" :key="node.path">
-                    <div class="node-header category" @click="toggleNode(node)">
-                      <span class="node-icon">{{ node.expanded ? '📂' : '📁' }}</span>
-                      <span class="node-label">{{ node.label }}</span>
-                    </div>
-                    
-                    <!-- Level 2: Subdirectories or Files -->
-                    <div class="node-children" v-if="node.expanded">
-                      <div class="tree-sub-node" v-for="child in node.children" :key="child.path">
-                        <!-- Sub-directory -->
-                        <div v-if="child.type === 'directory'" class="sub-group">
-                           <div class="node-header sub-category" @click="toggleNode(child)">
-                              <span class="node-icon">{{ child.expanded ? '📂' : '📁' }}</span>
-                              <span class="node-label">{{ child.label }}</span>
-                           </div>
-                           <!-- Level 3: Files inside Sub-directory -->
-                           <div class="node-children" v-if="child.expanded">
-                              <div class="file-item" v-for="file in child.children" :key="file.path" @click="viewFile(file)">
-                                <span class="file-icon">📄</span>
-                                <span class="file-name">{{ file.label }}</span>
-                              </div>
-                           </div>
-                        </div>
-                        <!-- Direct File -->
-                        <div v-else class="file-item" @click="viewFile(child)">
-                          <span class="file-icon">📄</span>
-                          <span class="file-name">{{ child.label }}</span>
-                        </div>
-                      </div>
+            </div>
+            <div class="data-list">
+              <div class="list-header iot">
+                <span class="col-device">编号</span>
+                <span class="col-protocol">类型ID</span>
+                <span class="col-station">断面</span>
+                <span class="col-status">来源</span>
+              </div>
+              <div class="list-body">
+                <div class="list-row" v-for="s in searchedSensors" :key="s.id" @click="loadSensorMetrics(s.id)">
+                  <span class="col-device">{{ s.code }}</span>
+                  <span class="col-protocol">{{ s.sensor_type_id ?? '-' }}</span>
+                  <span class="col-station">{{ s.section_id }}</span>
+                  <span class="col-status">
+                    <span class="status-dot" :class="s.is_simulated ? 'offline' : 'online'"></span>
+                    {{ s.is_simulated ? '模拟' : '真实' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="section-header" style="margin-top: 12px;">
+              <span>指标与最新读数</span>
+            </div>
+            <div class="data-list compact" v-if="metrics.length">
+                <div class="list-body">
+                  <div class="list-row compact-row" v-for="m in metrics" :key="m.id" @click="loadReadings(m.metric_key)">
+                    <span class="col-name">{{ m.metric_key }}</span>
+                    <span class="col-value">{{ readingsMap[m.id]?.value_num ?? '—' }} {{ m.unit || '' }}</span>
+                    <span class="col-time">{{ readingsMap[m.id]?.reading_time || '' }}</span>
+                    <span class="col-status">
+                      <span v-if="m.warn_low !== null || m.warn_high !== null" class="warn-range">
+                        {{ m.warn_low ?? '-' }} ~ {{ m.warn_high ?? '-' }}
+                      </span>
+                      <span v-if="selectedMetricKey === m.metric_key" class="active-tag">历史</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="empty-tip">请选择传感器查看指标</div>
+              <div v-if="readings.length" class="history-box">
+                <div class="section-header" style="margin-top: 8px;">
+                  <span>最近读数（{{ selectedMetricKey }}）</span>
+                  <div class="filter-group">
+                    <input class="time-input" type="datetime-local" v-model="historyStart" />
+                    <input class="time-input" type="datetime-local" v-model="historyEnd" />
+                    <input class="limit-input" type="number" min="1" max="500" v-model.number="historyLimit" />
+                    <span class="filter-btn" @click="selectedMetricKey && loadReadings(selectedMetricKey)">刷新</span>
+                  </div>
+                </div>
+                <div class="chart-container">
+                  <div ref="historyChartRef" class="echarts-box small-chart"></div>
+                </div>
+                <div class="data-list compact">
+                  <div class="list-body">
+                    <div class="list-row compact-row" v-for="r in readings" :key="r.id">
+                      <span class="col-time">{{ r.reading_time }}</span>
+                      <span class="col-value">{{ r.value_num ?? '—' }} {{ r.unit || '' }}</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- File Content Dialog -->
-            <div class="file-dialog-overlay" v-if="selectedFile" @click.self="selectedFile = null">
-              <div class="file-dialog tech-panel">
-                <div class="dialog-header">
-                  <span class="title">{{ selectedFile.label }}</span>
-                  <button class="close-btn" @click="selectedFile = null">×</button>
+            <!-- 告警 -->
+            <div v-show="activeTab === 'warnings'" class="content-section">
+              <div class="section-header">
+                <span>当前告警（后端）</span>
+                <div class="filter-group">
+                  <span class="filter-btn" :class="{ active: warnFilter === 'all' }" @click="warnFilter = 'all'">全部</span>
+                  <span class="filter-btn" :class="{ active: warnFilter === 'yellow' }" @click="warnFilter = 'yellow'">Yellow</span>
+                  <span class="filter-btn" :class="{ active: warnFilter === 'red' }" @click="warnFilter = 'red'">Red</span>
                 </div>
-                <div class="dialog-body">
-                  <div v-if="fileLoading" class="loading-state">
-                    <div class="spinner"></div>加载数据中...
+              </div>
+              <div class="data-list">
+                <div class="list-header floods">
+                  <span class="col-name">传感器</span>
+                  <span class="col-level">级别</span>
+                  <span class="col-time">时间</span>
+                  <span class="col-region">描述</span>
+                </div>
+                <div class="list-body">
+                  <div class="list-row flood-row" v-for="w in filteredWarnings" :key="w.sensor_id + w.time + w.metric">
+                    <span class="col-name">{{ w.sensor_id || '-' }} / {{ w.metric }}</span>
+                    <span class="col-level">
+                      <span class="level-tag" :class="w.level.toLowerCase()">{{ w.level }}</span>
+                    </span>
+                    <span class="col-time">{{ w.time }}</span>
+                    <span class="col-region">{{ w.message }}</span>
                   </div>
-                  <div v-else-if="fileError" class="error-state">{{ fileError }}</div>
-                  <div v-else class="data-preview">
-                    <!-- Simple Line Chart Visualization -->
-                    <div class="chart-container" v-if="chartOption">
-                       <div ref="chartRef" class="echarts-box"></div> 
-                    </div>
-                    <div class="data-table-wrapper">
-                      <table class="data-table">
-                        <thead>
-                          <tr>
-                            <th v-for="col in fileData?.columns" :key="col">{{ col }}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr v-for="(row, idx) in fileData?.data.slice(0, 50)" :key="idx">
-                            <td v-for="col in fileData?.columns" :key="col">{{ row[col] }}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                      <div class="table-footer" v-if="(fileData?.data.length || 0) > 50">
-                        显示前 50 条 / 共 {{ fileData?.data.length }} 条
-                      </div>
-                    </div>
-                  </div>
+                  <div v-if="!filteredWarnings.length" class="empty-tip">当前无告警</div>
                 </div>
               </div>
             </div>
@@ -301,59 +323,19 @@
           </div>
         </div>
         <div class="chart-body">
-          <!-- 水位趋势图 -->
-          <div v-show="chartType === 'waterLevel'" class="chart-content">
-            <svg width="100%" height="160" viewBox="0 0 400 160" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="waterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" style="stop-color:rgba(0, 246, 255, 0.5)" />
-                  <stop offset="100%" style="stop-color:rgba(0, 246, 255, 0)" />
-                </linearGradient>
-              </defs>
-              <!-- 网格线 -->
-              <g stroke="rgba(255,255,255,0.1)" stroke-width="1">
-                <line x1="40" y1="20" x2="400" y2="20" />
-                <line x1="40" y1="50" x2="400" y2="50" />
-                <line x1="40" y1="80" x2="400" y2="80" />
-                <line x1="40" y1="110" x2="400" y2="110" />
-                <line x1="40" y1="140" x2="400" y2="140" />
-              </g>
-              <!-- Y轴标签 -->
-              <g fill="#8eb9d9" font-size="10">
-                <text x="35" y="24" text-anchor="end">50m</text>
-                <text x="35" y="54" text-anchor="end">40m</text>
-                <text x="35" y="84" text-anchor="end">30m</text>
-                <text x="35" y="114" text-anchor="end">20m</text>
-                <text x="35" y="144" text-anchor="end">10m</text>
-              </g>
-              <!-- 警戒线 -->
-              <line x1="40" y1="65" x2="400" y2="65" stroke="#ffbd2e" stroke-width="1" stroke-dasharray="4,4" />
-              <text x="395" y="62" fill="#ffbd2e" font-size="9" text-anchor="end">警戒水位</text>
-              <!-- 水位曲线 -->
-              <path d="M40,100 Q80,95 120,85 T200,75 T280,70 T360,80 L360,140 L40,140 Z" fill="url(#waterGrad)" />
-              <path d="M40,100 Q80,95 120,85 T200,75 T280,70 T360,80" fill="none" stroke="#00f6ff" stroke-width="2" />
-              <!-- 数据点 -->
-              <circle cx="120" cy="85" r="3" fill="#fff" />
-              <circle cx="200" cy="75" r="3" fill="#fff" />
-              <circle cx="280" cy="70" r="3" fill="#fff" />
-              <circle cx="360" cy="80" r="3" fill="#fff" />
-              <!-- X轴标签 -->
-              <g fill="#8eb9d9" font-size="9">
-                <text x="40" y="155">00:00</text>
-                <text x="120" y="155">06:00</text>
-                <text x="200" y="155">12:00</text>
-                <text x="280" y="155">18:00</text>
-                <text x="360" y="155">24:00</text>
-              </g>
-            </svg>
-            <div class="chart-legend">
-              <span><i class="dot water"></i>实时水位</span>
-              <span><i class="dot warning"></i>警戒水位 35m</span>
+          <div class="chart-content">
+            <div v-if="waterLevels.length === 0" class="empty-tip">暂无后端水位数据</div>
+            <div v-else class="data-list compact">
+              <div class="list-row compact-row" v-for="wl in waterLevels" :key="wl.sensor_id">
+                <span class="col-name">{{ wl.station_name || wl.sensor_id }}</span>
+                <span class="col-value">{{ wl.latest_level ?? '—' }} {{ wl.unit || '' }}</span>
+                <span class="col-time">{{ wl.time }}</span>
+              </div>
             </div>
           </div>
-          <!-- 降雨分布图 -->
-          <div v-show="chartType === 'rainfall'" class="chart-content">
-            <div class="bar-chart">
+          <div class="chart-content">
+            <div v-if="rainfallData.length === 0" class="empty-tip">暂无后端降雨数据</div>
+            <div class="bar-chart" v-else>
               <div class="bar-item" v-for="(r, i) in rainfallData" :key="i">
                 <div class="bar-wrapper">
                   <div class="bar" :style="{ height: r.value + '%', background: r.color }"></div>
@@ -362,14 +344,8 @@
                 <span class="bar-value">{{ r.mm }}mm</span>
               </div>
             </div>
-            <div class="chart-legend">
-              <span><i class="dot light"></i>小雨 (&lt;10mm)</span>
-              <span><i class="dot moderate"></i>中雨 (10-25mm)</span>
-              <span><i class="dot heavy"></i>大雨 (&gt;25mm)</span>
-            </div>
           </div>
-          <!-- 设备状态图 -->
-          <div v-show="chartType === 'status'" class="chart-content">
+          <div class="chart-content">
             <div class="status-chart">
               <div class="pie-container">
                 <svg width="140" height="140" viewBox="0 0 140 140">
@@ -451,7 +427,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, reactive, onMounted, nextTick } from 'vue'
+import { ref, computed, reactive, onMounted, nextTick, watch } from 'vue'
 import GlobalLayout from '@/components/GlobalLayout.vue'
 import { 
   fetchStationsTree, 
@@ -460,12 +436,21 @@ import {
   fetchRainGridFrames, 
   fetchIoTDevices, 
   fetchThreeDResources,
+  fetchSensors,
+  fetchWarnings,
+  fetchWaterLevels,
+  fetchRainfallData,
+  fetchSensorMetrics,
+  fetchReadings,
   StationNode, 
   ExcelData,
   FloodEvent,
   RainGridFrame,
   IoTDevice,
-  ThreeDResource
+  ThreeDResource,
+  SensorItem,
+  SensorMetricItem,
+  ReadingItem
 } from '@/api/backend'
 import * as echarts from 'echarts'
 
@@ -482,11 +467,26 @@ const events = ref<FloodEvent[]>([])
 const rainFrames = ref<RainGridFrame[]>([])
 const models = ref<ThreeDResource[]>([])
 const iotDevices = ref<IoTDevice[]>([])
+const sensors = ref<SensorItem[]>([])
+const warnings = ref<any[]>([])
+const waterLevels = ref<any[]>([])
+const rainData = ref<any[]>([])
+const metrics = ref<SensorMetricItem[]>([])
+const readingsMap = ref<Record<number, ReadingItem>>({})
+const selectedSensorId = ref<number | null>(null)
+const selectedMetricKey = ref<string | null>(null)
+const readings = ref<ReadingItem[]>([])
+const sensorFilter = ref<'all' | 'real' | 'sim'>('all')
+const warnFilter = ref<'all' | 'yellow' | 'red'>('all')
+const historyLimit = ref<number>(50)
+const historyStart = ref<string | null>(null)
+const historyEnd = ref<string | null>(null)
+const sensorKeyword = ref('')
 
 // 面板状态
 const isPanelCollapsed = ref(false)
 const isMapPanelExpanded = ref(false)
-const activeTab = ref<'stations' | 'floods' | 'iot' | 'models'>('stations')
+const activeTab = ref<'sensors' | 'warnings' | 'iot' | 'models'>('sensors')
 const stationFilter = ref<'all' | 'file'>('all')
 const iotFilter = ref<'all' | 'online' | 'offline'>('all')
 const chartType = ref<'waterLevel' | 'rainfall' | 'status'>('waterLevel')
@@ -497,7 +497,9 @@ const fileData = ref<ExcelData | null>(null)
 const fileLoading = ref(false)
 const fileError = ref('')
 const chartRef = ref<HTMLElement | null>(null)
+const historyChartRef = ref<HTMLElement | null>(null)
 const chartOption = ref<any>(null)
+const historyChart = ref<any>(null)
 
 // Helper to count files recursively
 const countFiles = (nodes: UIStationNode[]): number => {
@@ -519,98 +521,130 @@ const toggleNode = (node: UIStationNode) => {
     node.expanded = !node.expanded;
 }
 
-const viewFile = async (node: UIStationNode) => {
-    selectedFile.value = node;
-    fileLoading.value = true;
-    fileError.value = '';
-    fileData.value = null;
-    chartOption.value = null;
-
-    try {
-        const data = await fetchStationData(node.path);
-        if (data && data.data) {
-            fileData.value = data;
-            renderChart(data);
-        } else {
-            fileError.value = "暂无数据或文件格式不支持";
-        }
-    } catch (e) {
-        fileError.value = "读取文件失败";
-    } finally {
-        fileLoading.value = false;
+// 加载传感器的指标与最新读数
+const loadSensorMetrics = async (sensorId: number) => {
+  selectedSensorId.value = sensorId
+  readingsMap.value = {}
+  metrics.value = await fetchSensorMetrics(sensorId)
+  for (const m of metrics.value) {
+    const r = await fetchReadings({ sensor_id: sensorId, metric_key: m.metric_key, limit: 1 })
+    if (r && r.length) {
+      readingsMap.value[m.id] = r[0]
     }
+  }
+  if (metrics.value.length) {
+    selectedMetricKey.value = metrics.value[0].metric_key
+    await loadReadings(metrics.value[0].metric_key)
+  } else {
+    readings.value = []
+    selectedMetricKey.value = null
+  }
 }
 
-const renderChart = (data: ExcelData) => {
-    if (!data.data || data.data.length === 0) return;
-    
-    // Try to find Time and Value columns
-    const firstRow = data.data[0];
-    const timeCol = data.columns.find(c => c.includes('时间') || c.includes('日期') || c.includes('Date') || c.includes('Time'));
-    // Find first numeric column that is not time
-    const valueCol = data.columns.find(c => c !== timeCol && typeof firstRow[c] === 'number');
-
-    if (timeCol && valueCol) {
-        const xData = data.data.map(row => row[timeCol]);
-        const yData = data.data.map(row => row[valueCol]);
-
-        chartOption.value = {
-            title: { text: `${valueCol} 趋势`, textStyle: { color: '#ccc', fontSize: 12 }, left: 'center' },
-            tooltip: { trigger: 'axis' },
-            grid: { top: 30, bottom: 20, left: 40, right: 20 },
-            xAxis: { type: 'category', data: xData, axisLabel: { color: '#888' } },
-            yAxis: { type: 'value', axisLabel: { color: '#888' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
-            series: [{ data: yData, type: 'line', smooth: true, itemStyle: { color: '#00f6ff' }, areaStyle: { opacity: 0.2 } }]
-        };
-
-        nextTick(() => {
-            if (chartRef.value) {
-                const chart = echarts.init(chartRef.value);
-                chart.setOption(chartOption.value);
-                window.addEventListener('resize', () => chart.resize());
-            }
-        });
-    }
+const loadReadings = async (metricKey: string) => {
+  if (!selectedSensorId.value) return
+  selectedMetricKey.value = metricKey
+  readings.value = await fetchReadings({
+    sensor_id: selectedSensorId.value,
+    metric_key: metricKey,
+    limit: historyLimit.value,
+    start: historyStart.value || undefined,
+    end: historyEnd.value || undefined
+  })
+  await nextTick()
+  renderHistoryChart()
 }
+
+const renderHistoryChart = () => {
+  const el = historyChartRef.value
+  if (!el || !readings.value.length) {
+    if (historyChart.value) {
+      historyChart.value.dispose()
+      historyChart.value = null
+    }
+    return
+  }
+  // ensure element has size
+  if (!el.clientWidth || !el.clientHeight) {
+    requestAnimationFrame(renderHistoryChart)
+    return
+  }
+  const sorted = [...readings.value].sort((a, b) => (a.reading_time || '').localeCompare(b.reading_time || ''))
+  const xData = sorted.map(r => r.reading_time)
+  const yData = sorted.map(r => r.value_num ?? null)
+  if (!historyChart.value) {
+    historyChart.value = echarts.init(historyChartRef.value)
+  }
+  historyChart.value.setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { top: 20, bottom: 40, left: 40, right: 10 },
+    xAxis: { type: 'category', data: xData, axisLabel: { color: '#888', rotate: 45, fontSize: 10 } },
+    yAxis: { type: 'value', axisLabel: { color: '#888' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+    series: [{
+      name: selectedMetricKey.value,
+      type: 'line',
+      smooth: true,
+      data: yData,
+      itemStyle: { color: '#00f6ff' },
+      areaStyle: { opacity: 0.1, color: '#00f6ff' }
+    }]
+  })
+  window.addEventListener('resize', () => historyChart.value && historyChart.value.resize())
+}
+
+watch(readings, renderHistoryChart)
 
 onMounted(async () => {
-  // Fetch all data in parallel
-  const [treeData, eventsData, rainFramesData, iotData, modelsData] = await Promise.all([
-    fetchStationsTree(),
+  const [eventsData, rainFramesData, iotData, modelsData, sensorData, warnData, wlData, rfData] = await Promise.all([
     fetchFloodEvents(),
     fetchRainGridFrames(),
     fetchIoTDevices(),
-    fetchThreeDResources()
+    fetchThreeDResources(),
+    fetchSensors(),
+    fetchWarnings(),
+    fetchWaterLevels(),
+    fetchRainfallData()
   ]);
 
-  stationTree.value = treeData.map(n => ({ ...n, expanded: false }));
   events.value = eventsData;
   rainFrames.value = rainFramesData;
   iotDevices.value = iotData;
   models.value = modelsData;
-  
-  const timer = setInterval(() => {
-    if (initGlobeFilter()) {
-      clearInterval(timer)
-      hideCachedFloodLayers()
-      hideCachedBimTileset()
-      showStationMarkers()
-    }
-  }, 300)
+  sensors.value = sensorData;
+  warnings.value = warnData;
+  waterLevels.value = wlData;
+  rainData.value = rfData;
 })
 
 // ... (keep other functions like toggleBaseMap, etc.) ...
 // We need to keep the rest of the script valid.
 // Copying specific parts to ensure validity.
 
-// 降雨数据（模拟）- Keep for chart
+// 降雨数据（来自后端，如无真实雨量数据则为空）
 const rainfallData = computed(() => {
-    // Mock data for chart visualization only
-    return [
-        { label: '天山', mm: 12.5, value: 37.5, color: '#00c864' },
-        { label: '伊犁', mm: 25.0, value: 75.0, color: '#0096c8' },
-        { label: '阿尔', mm: 8.5, value: 25.5, color: '#a6f2cc' },
-    ];
+    return rainData.value.map((r) => ({
+      label: r.station_name || r.sensor_id,
+      mm: r.latest_rainfall || 0,
+      value: Math.min(100, (r.latest_rainfall || 0) * 3),
+      color: r.latest_rainfall > 25 ? '#ff6b6b' : r.latest_rainfall > 10 ? '#0096c8' : '#00c864'
+    }))
+})
+const filteredSensors = computed(() => {
+  if (sensorFilter.value === 'real') return sensors.value.filter(s => !s.is_simulated)
+  if (sensorFilter.value === 'sim') return sensors.value.filter(s => s.is_simulated)
+  return sensors.value
+})
+const searchedSensors = computed(() => {
+  const kw = sensorKeyword.value.trim()
+  let arr = filteredSensors.value
+  if (kw) {
+    arr = arr.filter(s => s.code.toLowerCase().includes(kw.toLowerCase()))
+  }
+  return arr
+})
+const filteredWarnings = computed(() => {
+  if (warnFilter.value === 'all') return warnings.value
+  return warnings.value.filter((w: any) => w.level?.toLowerCase() === warnFilter.value)
 })
 
 const onlinePercent = computed(() => {
@@ -699,36 +733,9 @@ const ensureTdtLayers = (val: string) => {
   return mapLayers[val]
 }
 
-const hideAllBaseLayers = () => {
-  Object.values(mapLayers).forEach((arr) => {
-    arr.forEach((layer: any) => {
-      layer.show = false
-    })
-  })
-}
-
-const toggleBaseMap = (val: string) => {
-  const viewer = (window as any).Gviewer
-  if (!viewer) return
-  hideAllBaseLayers()
-  const targetLayers = val === 'amap' ? mapLayers.amap : ensureTdtLayers(val)
-  targetLayers.forEach((layer: any) => {
-    layer.show = true
-  })
-  updateUniforms()
-}
-
-const initGlobeFilter = () => {
-  const viewer = (window as any).Gviewer
-  if (!viewer || !viewer.scene || !viewer.scene.globe) return false
-  const len = viewer.imageryLayers.length
-  for (let i = 0; i < len; i++) {
-    originalLayers.push(viewer.imageryLayers.get(i))
-  }
-  mapLayers.amap = originalLayers
-  updateUniforms()
-  return true
-}
+const hideAllBaseLayers = () => {}
+const toggleBaseMap = (val: string) => {}
+const initGlobeFilter = () => false
 // ========== 底图处理逻辑结束 ==========
 
 // Removed filteredStations computed prop as we use stationTree now
@@ -738,11 +745,11 @@ const filteredIoT = computed(() => {
   return iotDevices.value.filter(d => d.status === iotFilter.value)
 })
 
-const reservoirCount = ref(6)
-const hydroCount = ref(15)
-const rainCount = ref(15)
+const reservoirCount = computed(() => sensors.value.filter(s => s.code.startsWith('res_')).length)
+const hydroCount = computed(() => sensors.value.filter(s => s.code.startsWith('hyd_')).length)
+const rainCount = computed(() => sensors.value.filter(s => s.code.startsWith('rain_')).length)
 
-const warningCount = computed(() => 3)
+const warningCount = computed(() => warnings.value.length)
 const onlineIoTCount = computed(() => iotDevices.value.filter(d => d.status === 'online').length)
 
 // Removed typeLabel, statusLabel for stations as structure changed
@@ -785,28 +792,9 @@ const locateModel = (m: ThreeDResource) => {
 }
 
 // 隐藏其他页面残留
-const hideCachedFloodLayers = () => {
-  const cache = (window as any).__floodLayerCache
-  if (cache) {
-    Object.values(cache).forEach((set: any) => {
-      Object.values(set).forEach((layer: any) => {
-        if (layer) layer.show = false
-      })
-    })
-  }
-}
-
-const hideCachedBimTileset = () => {
-  const tileset = (window as any).__bimTileset
-  if (tileset) tileset.show = false
-}
-
-const showStationMarkers = () => {
-  const mgr: any = (window as any).__stationMarkerManager
-  if (mgr && mgr.entities) {
-    mgr.entities.forEach((e: any) => { e.show = true })
-  }
-}
+const hideCachedFloodLayers = () => {}
+const hideCachedBimTileset = () => {}
+const showStationMarkers = () => {}
 </script>
 
 <style scoped lang="scss">
@@ -1138,7 +1126,7 @@ const showStationMarkers = () => {
   }
 
   .chart-container {
-    height: 300px;
+    min-height: 200px;
     background: rgba(0, 0, 0, 0.3);
     border-radius: 4px;
     padding: 10px;
@@ -1146,6 +1134,9 @@ const showStationMarkers = () => {
     .echarts-box {
       width: 100%;
       height: 100%;
+      &.small-chart {
+        min-height: 200px;
+      }
     }
   }
 

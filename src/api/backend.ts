@@ -100,6 +100,36 @@ export interface ThreeDResource {
   note?: string;
 }
 
+export interface SensorItem {
+  id: number;
+  code: string;
+  section_id: number;
+  sensor_type_id?: number;
+  is_simulated: boolean;
+  lng?: number;
+  lat?: number;
+}
+
+export interface SensorMetricItem {
+  id: number;
+  metric_key: string;
+  name_cn?: string;
+  unit?: string;
+  warn_low?: number;
+  warn_high?: number;
+  is_simulated: boolean;
+}
+
+export interface ReadingItem {
+  id: number;
+  sensor_id: number;
+  metric_id: number;
+  reading_time?: string;
+  value_num?: number;
+  unit?: string;
+  is_simulated: boolean;
+}
+
 /**
  * 获取监测站点的目录结构
  */
@@ -212,10 +242,40 @@ export async function fetchRainfallData(): Promise<RainfallReading[]> {
  */
 export async function fetchWarnings(): Promise<WarningItem[]> {
     try {
-        const response = await backendApi.get<WarningItem[]>('/warnings');
+        const response = await backendApi.get<WarningItem[]>('/warnings', { params: { is_simulated: false } });
         return response.data;
     } catch (error) {
         console.error('Error fetching warnings:', error);
         return [];
     }
+}
+
+export async function fetchSensors(): Promise<SensorItem[]> {
+  try {
+    const res = await backendApi.get<SensorItem[]>('/v1/sensors');
+    return res.data;
+  } catch (error) {
+    console.error('Error fetching sensors:', error);
+    return [];
+  }
+}
+
+export async function fetchSensorMetrics(sensorId: number): Promise<SensorMetricItem[]> {
+  try {
+    const res = await backendApi.get<SensorMetricItem[]>(`/v1/sensors/${sensorId}/metrics`);
+    return res.data;
+  } catch (error) {
+    console.error('Error fetching sensor metrics:', error);
+    return [];
+  }
+}
+
+export async function fetchReadings(params: { sensor_id: number; metric_key?: string; limit?: number; start?: string; end?: string }): Promise<ReadingItem[]> {
+  try {
+    const res = await backendApi.get<ReadingItem[]>('/v1/readings', { params });
+    return res.data;
+  } catch (error) {
+    console.error('Error fetching readings:', error);
+    return [];
+  }
 }

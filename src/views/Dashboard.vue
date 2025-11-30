@@ -237,7 +237,10 @@ const flyToXinjiang = () => {
 
 const truncateCode = (code: string) => {
   if (!code) return ''
-  return code.length > 18 ? `${code.slice(0, 8)}...${code.slice(-6)}` : code
+  const sanitized = code.replace(/[^A-Za-z0-9_-]/g, '')
+  const match = sanitized.match(/^[A-Za-z]+-\d+/)
+  if (match && match[0]) return match[0].toUpperCase()
+  return (sanitized || code).toUpperCase()
 }
 
 const addSensorMarkers = () => {

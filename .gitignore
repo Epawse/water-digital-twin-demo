@@ -30,5 +30,8 @@ flood_screenshot.png
 water-digital.txt
 安全监测数据-MMK发电引水洞/
 backend/venv/
+backend/.venv/
 __pycache__/
 *.pyc
+*.pdf
+.env.production
