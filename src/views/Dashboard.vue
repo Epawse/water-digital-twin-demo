@@ -90,29 +90,29 @@
 import { onMounted, reactive, ref, computed } from 'vue'
 import GlobalLayout from '@/components/GlobalLayout.vue'
 import ProjectOverview from '@/components/ProjectOverview.vue'
-import { StationMarkerManager } from '@/modules/FloodControl/StationMarker'
-import { SimStations, FloodEvents, IoTDevices } from '@/mock/simData'
+import { fetchSensors, fetchWarnings, fetchIoTDevices } from '@/api/backend'
 
 declare const Cesium: any
 
 const isPanelExpanded = ref(false)
+const sensors = ref<any[]>([])
+const warnings = ref<any[]>([])
+const iotDevices = ref<any[]>([])
+const sensorEntities: any[] = []
 
 // 站点统计数据
 const stationStats = computed(() => {
-  const reservoirs = SimStations.filter(s => s.type === 'reservoir')
-  const hydro = SimStations.filter(s => s.type === 'hydrological')
-  const rain = SimStations.filter(s => s.type === 'rain')
-  const warnings = SimStations.filter(s => s.status === 'warning' || s.status === 'danger')
-  const activeEvents = FloodEvents.filter(e => e.status === 'active')
-  const onlineDevices = IoTDevices.filter(d => d.status === 'online')
+  const reservoirs = sensors.value.filter((s) => s.code?.startsWith('res_'))
+  const hydro = sensors.value.filter((s) => s.code?.startsWith('hyd_'))
+  const rain = sensors.value.filter((s) => s.code?.startsWith('rain_'))
+  const onlineDevices = iotDevices.value.filter((d) => d.status === 'online')
 
   return [
     { icon: '🏊', label: '水库站', value: `${reservoirs.length} 座`, status: 'normal' },
     { icon: '📊', label: '水文站', value: `${hydro.length} 座`, status: 'normal' },
     { icon: '🌧️', label: '雨量站', value: `${rain.length} 座`, status: 'normal' },
-    { icon: '⚠️', label: '预警站点', value: `${warnings.length} 座`, status: warnings.length > 0 ? 'warning' : 'normal' },
-    { icon: '🌊', label: '活动事件', value: `${activeEvents.length} 个`, status: activeEvents.length > 0 ? 'danger' : 'normal' },
-    { icon: '📡', label: '在线设备', value: `${onlineDevices.length}/${IoTDevices.length}`, status: 'normal' },
+    { icon: '⚠️', label: '预警数', value: `${warnings.value.length} 条`, status: warnings.value.length > 0 ? 'warning' : 'normal' },
+    { icon: '📡', label: '在线设备', value: `${onlineDevices.length}/${iotDevices.value.length}`, status: 'normal' },
   ]
 })
 
@@ -235,50 +235,57 @@ const flyToXinjiang = () => {
   })
 }
 
-const ensureStationMarkers = () => {
+const truncateCode = (code: string) => {
+  if (!code) return ''
+  return code.length > 18 ? `${code.slice(0, 8)}...${code.slice(-6)}` : code
+}
+
+const addSensorMarkers = () => {
   const viewer = (window as any).Gviewer
   if (!viewer) return
-  const cache = (window as any).__stationMarkerManager
-  if (cache) return
-  const mgr = new StationMarkerManager(viewer)
-  mgr.init()
-  ;(window as any).__stationMarkerManager = mgr
-}
-
-const hideCachedFloodLayers = () => {
-  const cache = (window as any).__floodLayerCache
-  if (cache) {
-    Object.values(cache).forEach((set: any) => {
-      Object.values(set).forEach((layer: any) => {
-        if (layer) layer.show = false
+  // clear previous
+  sensorEntities.forEach((e) => viewer.entities.remove(e))
+  sensorEntities.length = 0
+  sensors.value
+    .filter((s) => s.lng && s.lat)
+    .forEach((s) => {
+      const labelText = truncateCode(s.code)
+      const ent = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(s.lng, s.lat, 10),
+        point: {
+          pixelSize: 8,
+          color: s.is_simulated ? Cesium.Color.CYAN.withAlpha(0.6) : Cesium.Color.LIME,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 1,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        },
+        label: {
+          text: labelText,
+          font: '11px sans-serif',
+          pixelOffset: new Cesium.Cartesian2(0, -15),
+          fillColor: Cesium.Color.WHITE,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 1,
+          showBackground: true,
+          backgroundColor: s.is_simulated ? Cesium.Color.fromCssColorString('#0ff').withAlpha(0.3) : Cesium.Color.fromCssColorString('#0f0').withAlpha(0.3),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        }
       })
+      sensorEntities.push(ent)
     })
-  }
 }
 
-const hideCachedBimTileset = () => {
-  const tileset = (window as any).__bimTileset
-  if (tileset) tileset.show = false
-}
-
-const showStationMarkers = () => {
-  const mgr: any = (window as any).__stationMarkerManager
-  if (mgr && mgr.entities) {
-    mgr.entities.forEach((e: any) => { e.show = true })
-  }
-}
-
-onMounted(() => {
+onMounted(async () => {
   const timer = setInterval(() => {
     if (initGlobeFilter()) {
       clearInterval(timer)
-      hideCachedFloodLayers()
-      hideCachedBimTileset()
-      ensureStationMarkers()
-      showStationMarkers()
       flyToXinjiang()
     }
   }, 300)
+  sensors.value = await fetchSensors()
+  warnings.value = await fetchWarnings()
+  iotDevices.value = await fetchIoTDevices()
+  addSensorMarkers()
 })
 </script>
 
