@@ -279,7 +279,12 @@ class ExcelImporter:
             select(IngestFile).where(IngestFile.sensor_id == sensor_id, IngestFile.checksum == checksum)
         )
         if exists:
-            return None
+            # 允许重导 rows_imported=0 的记录
+            if exists.rows_imported and exists.rows_imported > 0:
+                return None
+            exists.file_mtime = mtime
+            exists.status = "success"
+            return exists
         ingest = IngestFile(
             sensor_id=sensor_id,
             path=os.path.relpath(path, self.data_root),
@@ -373,8 +378,22 @@ class ExcelImporter:
         metadata["source_file"] = os.path.basename(path)
 
         header_row = self._find_header_row(df)
-        data_df = df.iloc[header_row + 1 :].reset_index(drop=True)
-        headers = df.iloc[header_row].fillna("").astype(str).tolist()
+        # 部分表格使用两行表头（第一行写传感器编号，第二行写指标名）；这里尝试合并
+        header_base = df.iloc[header_row].fillna("").astype(str).tolist()
+        header_next = df.iloc[header_row + 1].fillna("").astype(str).tolist() if header_row + 1 < len(df) else []
+        use_two_rows = any(x and str(x).strip().lower() != "nan" for x in header_next)
+        headers: List[str] = []
+        for i, h in enumerate(header_base):
+            sub = header_next[i] if use_two_rows and i < len(header_next) else ""
+            sub = "" if str(sub).strip().lower() == "nan" else str(sub).strip()
+            h_clean = "" if str(h).strip().lower() == "nan" else str(h).strip()
+            if sub:
+                headers.append(f"{h_clean} {sub}".strip())
+            else:
+                headers.append(h_clean)
+
+        data_start = header_row + 2 if use_two_rows else header_row + 1
+        data_df = df.iloc[data_start:].reset_index(drop=True)
         data_df.columns = headers
 
         point_code = metadata.get("point_code") or self._guess_point_code_from_filename(path)
@@ -528,6 +547,9 @@ class ExcelImporter:
 
     def _clean_value(self, value: Any) -> Any:
         # Normalize to JSON-serializable
+        if isinstance(value, pd.Series):
+            # Duplicate column names lead to a Series here; pick the first non-null
+            value = next((v for v in value if not pd.isna(v)), None)
         if pd.isna(value):
             return None
         if isinstance(value, pd.Timestamp):
