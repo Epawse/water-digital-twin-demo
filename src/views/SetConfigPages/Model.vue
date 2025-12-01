@@ -99,7 +99,7 @@ export default defineComponent({
         primitives.changePrimitiveColor(IdModel, val)
       }
     }
-    const rotateSpeed_change = (val: string) => {
+    const rotateSpeed_change = (val: number) => {
       if (primitives && window.Gviewer.entities) {
         primitives.changePrimitiverotateSpeed(IdModel, val)
       }
@@ -126,9 +126,10 @@ export default defineComponent({
         primitives.changePrimitiveLatRotation(IdModel, val)
       }
     }
-    const scale_change = (val: number) => {
+    const scale_change = (val: number | string) => {
+      const next = typeof val === 'number' ? val : parseFloat(val)
       if (primitives && window.Gviewer.entities) {
-        primitives.changePrimitiveScale(IdModel, val)
+        primitives.changePrimitiveScale(IdModel, next)
       }
     }
     const ModelCanMove_change = (val: boolean) => {

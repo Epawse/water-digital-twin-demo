@@ -301,19 +301,19 @@ onMounted(async () => {
 
 .panel-left {
   position: absolute;
-  left: 110px;
-  top: 120px;
+  left: var(--layout-panel-left);
+  top: var(--layout-panel-top);
   width: 280px;
   pointer-events: auto;
-  z-index: 30;
+  z-index: var(--z-panels);
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: var(--layout-panel-gap);
   max-height: calc(100vh - 140px);
   overflow-y: auto;
 
   &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-thumb { background: rgba(0, 246, 255, 0.3); border-radius: 2px; }
+  &::-webkit-scrollbar-thumb { background: rgba(0, 225, 255, 0.3); border-radius: 2px; }
 }
 
 .quick-stats {
@@ -363,40 +363,41 @@ onMounted(async () => {
 
 .panel-right {
   position: absolute;
-  right: 20px;
-  top: 120px;
+  right: var(--layout-panel-right);
+  top: 50%;
+  transform: translateY(-50%);
   pointer-events: auto;
   display: flex;
   flex-direction: row-reverse;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--layout-panel-gap);
 }
 
 .toolbar-container {
   display: flex;
   flex-direction: column;
-  background: rgba(0, 20, 40, 0.8);
-  border: 1px solid rgba(0, 246, 255, 0.3);
-  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 
   .toolbar-btn {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #00f6ff;
+    color: var(--primary-color);
     transition: all 0.2s;
     padding: 6px;
 
     &:hover {
-      background: rgba(0, 246, 255, 0.2);
+      background: rgba(0, 225, 255, 0.12);
     }
 
     &.is-active {
-      background: rgba(0, 246, 255, 0.3);
+      background: rgba(0, 225, 255, 0.18);
       color: #fff;
     }
   }
@@ -404,25 +405,25 @@ onMounted(async () => {
 
 .control-panel-box {
   width: 340px;
-  background: rgba(0, 20, 40, 0.9);
-  border: 1px solid rgba(0, 246, 255, 0.3);
+  background: var(--surface-3);
+  border: 1px solid var(--border-color);
   padding: 0;
-  border-radius: 4px;
-  color: #fff;
+  border-radius: var(--radius-md);
+  color: var(--text-strong);
   box-shadow: -5px 5px 15px rgba(0, 0, 0, 0.5);
 
   .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 15px;
-    border-bottom: 1px solid rgba(0, 246, 255, 0.2);
-    background: rgba(0, 246, 255, 0.1);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(0, 225, 255, 0.08);
 
     h3 {
       margin: 0;
       font-size: 14px;
-      color: #00f6ff;
+      color: var(--primary-color);
     }
 
     .close-btn {
@@ -437,16 +438,16 @@ onMounted(async () => {
   }
 
   .panel-body {
-    padding: 15px;
+    padding: var(--space-4);
   }
 
   .setting-group {
-    margin-top: 15px;
+    margin-top: var(--space-4);
 
     .group-label {
       font-size: 14px;
-      color: #ccc;
-      margin-bottom: 10px;
+      color: var(--text-mid);
+      margin-bottom: var(--space-2);
     }
   }
 
@@ -458,9 +459,9 @@ onMounted(async () => {
     .color-block {
       width: 24px;
       height: 24px;
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       cursor: pointer;
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       transition: transform 0.2s;
 
       &:hover {
@@ -475,13 +476,13 @@ onMounted(async () => {
     grid-template-columns: repeat(2, 1fr);
     gap: 15px;
 
-    .basemap-item {
-      cursor: pointer;
-      text-align: center;
-      border: 1px solid transparent;
-      border-radius: 4px;
-      padding: 8px;
-      transition: all 0.3s;
+      .basemap-item {
+        cursor: pointer;
+        text-align: center;
+        border: 1px solid transparent;
+        border-radius: var(--radius-sm);
+        padding: 8px;
+        transition: all 0.3s;
 
       .thumb {
         height: 60px;
@@ -523,16 +524,16 @@ onMounted(async () => {
         }
       }
 
-      &.active {
-        border-color: #00f6ff;
-        box-shadow: 0 0 10px rgba(0, 246, 255, 0.2);
-      }
+        &.active {
+          border-color: var(--primary-color);
+          box-shadow: var(--glow-accent);
+        }
 
-      &:hover {
-        transform: translateY(-2px);
-        border-color: rgba(0, 246, 255, 0.4);
+        &:hover {
+          transform: translateY(-2px);
+          border-color: rgba(0, 225, 255, 0.4);
+        }
       }
     }
-  }
 }
 </style>

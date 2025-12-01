@@ -239,6 +239,16 @@ export class StationMarkerManager {
     this.entities = []
   }
 
+  showAll() {
+    this.entities.forEach(entity => {
+      entity.show = true
+    })
+  }
+
+  getEntities() {
+    return this.entities
+  }
+
   destroy() {
     this.clear()
   }

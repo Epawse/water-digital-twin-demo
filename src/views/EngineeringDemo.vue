@@ -504,31 +504,31 @@ onUnmounted(() => {
 
 .panel-left {
   position: absolute;
-  left: 110px;
-  top: 120px;
+  left: var(--layout-panel-left);
+  top: var(--layout-panel-top);
   width: 320px;
   pointer-events: auto;
 }
 
 .panel {
   width: 100%;
-  background: rgba(0, 20, 40, 0.9);
-  border: 1px solid rgba(0, 246, 255, 0.3);
-  border-radius: 6px;
-  padding: 16px;
-  color: #d7e8ff;
+  background: var(--surface-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  color: var(--text-strong);
   box-shadow: -4px 6px 20px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(8px);
 
   h2 {
     margin: 0 0 8px 0;
     font-size: 16px;
-    color: #00f6ff;
+    color: var(--primary-color);
   }
 
   p {
     font-size: 12px;
-    color: #8eb9d9;
+    color: var(--text-mid);
     margin: 0 0 12px 0;
   }
 }
@@ -540,25 +540,25 @@ onUnmounted(() => {
   margin-bottom: 15px;
 
   .stat-item {
-    background: rgba(0, 246, 255, 0.05);
-    border: 1px solid rgba(0, 246, 255, 0.15);
-    border-radius: 4px;
-    padding: 10px;
-    text-align: center;
+  background: rgba(0, 225, 255, 0.05);
+  border: 1px solid rgba(0, 225, 255, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  text-align: center;
 
-    .stat-value {
-      display: block;
-      font-size: 20px;
-      font-weight: bold;
-      color: #00f6ff;
-      font-family: 'Courier New', monospace;
-    }
-
-    .stat-label {
-      font-size: 10px;
-      color: #8eb9d9;
-    }
+  .stat-value {
+    display: block;
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--primary-color);
+    font-family: var(--font-mono);
   }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--text-mid);
+  }
+}
 }
 
 .layer-control {
@@ -703,40 +703,41 @@ onUnmounted(() => {
 
 .panel-right {
   position: absolute;
-  right: 20px;
-  top: 120px;
+  right: var(--layout-panel-right);
+  top: 50%;
+  transform: translateY(-50%);
   pointer-events: auto;
   display: flex;
   flex-direction: row-reverse;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--layout-panel-gap);
 }
 
 .toolbar-container {
   display: flex;
   flex-direction: column;
-  background: rgba(0, 20, 40, 0.8);
-  border: 1px solid rgba(0, 246, 255, 0.3);
-  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 
   .toolbar-btn {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #00f6ff;
+    color: var(--primary-color);
     transition: all 0.2s;
     padding: 6px;
 
     &:hover {
-      background: rgba(0, 246, 255, 0.2);
+      background: rgba(0, 225, 255, 0.12);
     }
 
     &.is-active {
-      background: rgba(0, 246, 255, 0.3);
+      background: rgba(0, 225, 255, 0.18);
       color: #fff;
     }
   }
@@ -744,24 +745,24 @@ onUnmounted(() => {
 
 .control-panel-box {
   width: 280px;
-  background: rgba(0, 20, 40, 0.9);
-  border: 1px solid rgba(0, 246, 255, 0.3);
-  border-radius: 4px;
-  color: #fff;
+  background: var(--surface-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-strong);
   box-shadow: -5px 5px 15px rgba(0, 0, 0, 0.5);
 
   .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 15px;
-    border-bottom: 1px solid rgba(0, 246, 255, 0.2);
-    background: rgba(0, 246, 255, 0.1);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(0, 225, 255, 0.08);
 
     h3 {
       margin: 0;
       font-size: 14px;
-      color: #00f6ff;
+      color: var(--primary-color);
     }
 
     .close-btn {
@@ -776,16 +777,16 @@ onUnmounted(() => {
   }
 
   .panel-body {
-    padding: 15px;
+    padding: var(--space-4);
   }
 
   .setting-group {
-    margin-top: 15px;
+    margin-top: var(--space-4);
 
     .group-label {
       font-size: 12px;
-      color: #ccc;
-      margin-bottom: 10px;
+      color: var(--text-mid);
+      margin-bottom: var(--space-2);
     }
   }
 
@@ -797,9 +798,9 @@ onUnmounted(() => {
     .color-block {
       width: 24px;
       height: 24px;
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       cursor: pointer;
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       transition: transform 0.2s;
 
       &:hover {

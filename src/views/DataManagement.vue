@@ -486,7 +486,7 @@ const sensorKeyword = ref('')
 // 面板状态
 const isPanelCollapsed = ref(false)
 const isMapPanelExpanded = ref(false)
-const activeTab = ref<'sensors' | 'warnings' | 'iot' | 'models'>('sensors')
+const activeTab = ref<'sensors' | 'warnings' | 'iot' | 'models' | 'floods'>('sensors')
 const stationFilter = ref<'all' | 'file'>('all')
 const iotFilter = ref<'all' | 'online' | 'offline'>('all')
 const chartType = ref<'waterLevel' | 'rainfall' | 'status'>('waterLevel')
@@ -806,18 +806,18 @@ const showStationMarkers = () => {}
 
 .panel-main {
   position: absolute;
-  left: 110px;
-  top: 100px;
+  left: var(--layout-panel-left);
+  top: var(--layout-panel-top);
   width: 850px;
   max-height: calc(100vh - 120px);
-  background: rgba(0, 20, 40, 0.9);
-  border: 1px solid rgba(0, 246, 255, 0.2);
-  border-radius: 8px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
   pointer-events: auto;
   backdrop-filter: blur(8px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-soft);
   overflow: hidden;
   transition: width 0.3s ease;
 
@@ -835,8 +835,8 @@ const showStationMarkers = () => {}
 
   .panel-header {
     padding: 14px 16px;
-    border-bottom: 1px solid rgba(0, 246, 255, 0.15);
-    background: rgba(0, 246, 255, 0.05);
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(0, 225, 255, 0.06);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -853,19 +853,19 @@ const showStationMarkers = () => {}
       h2 {
         margin: 0;
         font-size: 16px;
-        color: #00f6ff;
+        color: var(--primary-color);
         font-weight: 500;
       }
 
       p {
         margin: 4px 0 0;
         font-size: 12px;
-        color: #8eb9d9;
+        color: var(--text-mid);
       }
     }
 
     .collapse-btn {
-      color: #00f6ff;
+      color: var(--primary-color);
       transition: transform 0.3s;
       display: flex;
       align-items: center;
@@ -881,15 +881,15 @@ const showStationMarkers = () => {}
 .tab-bar {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid rgba(0, 246, 255, 0.15);
-  background: rgba(0, 20, 40, 0.5);
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(18, 32, 52, 0.6);
 }
 
 .tab-item {
   flex: 1;
   padding: 10px 12px;
   text-align: center;
-  color: #8eb9d9;
+  color: var(--text-mid);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
@@ -904,24 +904,24 @@ const showStationMarkers = () => {}
   }
 
   .tab-count {
-    background: rgba(0, 246, 255, 0.15);
+    background: rgba(0, 225, 255, 0.15);
     padding: 1px 6px;
     border-radius: 8px;
     font-size: 10px;
   }
 
   &:hover {
-    background: rgba(0, 246, 255, 0.08);
-    color: #d7e8ff;
+    background: rgba(0, 225, 255, 0.08);
+    color: var(--text-strong);
   }
 
   &.active {
-    color: #00f6ff;
-    border-bottom-color: #00f6ff;
-    background: rgba(0, 246, 255, 0.1);
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background: rgba(0, 225, 255, 0.1);
 
     .tab-count {
-      background: rgba(0, 246, 255, 0.3);
+      background: rgba(0, 225, 255, 0.28);
     }
   }
 }
@@ -938,10 +938,10 @@ const showStationMarkers = () => {}
     background: rgba(0, 0, 0, 0.2);
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(0, 246, 255, 0.3);
+    background: rgba(0, 225, 255, 0.3);
     border-radius: 3px;
     &:hover {
-      background: rgba(0, 246, 255, 0.5);
+      background: rgba(0, 225, 255, 0.5);
     }
   }
 }
@@ -963,7 +963,7 @@ const showStationMarkers = () => {}
 
   span {
     font-size: 13px;
-    color: #00f6ff;
+    color: var(--primary-color);
     font-weight: 500;
   }
 }
@@ -976,30 +976,30 @@ const showStationMarkers = () => {}
 .filter-btn {
   padding: 3px 10px;
   font-size: 11px;
-  color: #8eb9d9;
+  color: var(--text-mid);
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    background: rgba(0, 246, 255, 0.1);
-    border-color: rgba(0, 246, 255, 0.3);
+    background: rgba(0, 225, 255, 0.1);
+    border-color: rgba(0, 225, 255, 0.3);
   }
 
   &.active {
-    background: rgba(0, 246, 255, 0.2);
-    border-color: #00f6ff;
-    color: #00f6ff;
+    background: rgba(0, 225, 255, 0.2);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
   }
 }
 
 // File Browser Styles
 .file-browser {
   background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(0, 246, 255, 0.1);
-  border-radius: 6px;
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-md);
   padding: 10px;
   height: 400px;
   overflow-y: auto;

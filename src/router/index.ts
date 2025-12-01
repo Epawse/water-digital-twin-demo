@@ -28,9 +28,13 @@ const routes: Array<RouteRecordRaw> = [
     component: RainfallAnalysis,
   },
   {
-    path: '/bim-demo',
-    name: 'EngineeringDemo',
+    path: '/visualization',
+    name: 'Visualization3D',
     component: EngineeringDemo,
+  },
+  {
+    path: '/bim-demo',
+    redirect: '/visualization',
   },
   {
     path: '/data',

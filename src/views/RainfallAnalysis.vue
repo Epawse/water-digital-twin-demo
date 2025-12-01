@@ -129,7 +129,7 @@ const handleRainfallFrameChange = (frame: RainfallFrame | null) => {
   }
 }
 
-const formatTime = (ts: number) => {
+const formatTime = (ts: string | number) => {
   return new Date(ts).toLocaleString('zh-CN', {
     month: '2-digit', 
     day: '2-digit', 
@@ -300,66 +300,66 @@ onUnmounted(() => {
 
 .panel-left {
   position: absolute;
-  left: 110px; /* Position next to navigation menu */
-  top: 120px;
+  left: var(--layout-panel-left); /* Position next to navigation menu */
+  top: var(--layout-panel-top);
   pointer-events: auto;
   display: flex;
   flex-direction: row; /* Layout toolbar and control box horizontally */
   align-items: flex-start;
-  gap: 10px;
-  z-index: 20;
+  gap: var(--layout-panel-gap);
+  z-index: var(--z-panels);
 
   .toolbar-container {
     display: flex;
     flex-direction: column;
-    background: rgba(0, 20, 40, 0.8);
-    border: 1px solid rgba(0, 246, 255, 0.3);
-    border-radius: 4px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
     overflow: hidden;
 
     .toolbar-btn {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      color: #00f6ff;
+      color: var(--primary-color);
       transition: all 0.2s;
       padding: 6px;
 
       &:hover {
-        background: rgba(0, 246, 255, 0.2);
+        background: rgba(0, 225, 255, 0.12);
       }
 
       &.is-active {
-        background: rgba(0, 246, 255, 0.3);
+        background: rgba(0, 225, 255, 0.18);
         color: #fff;
       }
     }
   }
 
   .control-panel-box {
-    width: 340px;
-    background: rgba(0, 20, 40, 0.9);
-    border: 1px solid rgba(0, 246, 255, 0.3);
+    width: 360px;
+    background: var(--surface-3);
+    border: 1px solid var(--border-color);
     padding: 0;
-    border-radius: 4px;
-    color: #fff;
+    border-radius: var(--radius-md);
+    color: var(--text-strong);
     box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.5); /* Adjusted shadow for left panel */
 
     .panel-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 15px;
-      border-bottom: 1px solid rgba(0, 246, 255, 0.2);
-      background: rgba(0, 246, 255, 0.1);
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(0, 225, 255, 0.08);
 
       h3 {
         margin: 0;
         font-size: 14px;
-        color: #00f6ff;
+        color: var(--primary-color);
       }
 
       .close-btn {
@@ -373,17 +373,17 @@ onUnmounted(() => {
       }
     }
 
-    .panel-body {
-      padding: 15px;
+  .panel-body {
+      padding: var(--space-4);
     }
 
     .setting-group {
-      margin-top: 15px;
+      margin-top: var(--space-4);
 
       .group-label {
-        font-size: 14px;
-        color: #ccc;
-        margin-bottom: 10px;
+          font-size: 14px;
+          color: var(--text-mid);
+          margin-bottom: var(--space-2);
       }
     }
 
@@ -398,13 +398,13 @@ onUnmounted(() => {
       gap: 8px;
       flex-wrap: wrap;
 
-      .color-block {
-        width: 24px;
-        height: 24px;
-        border-radius: 4px;
-        cursor: pointer;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        transition: transform 0.2s;
+        .color-block {
+          width: 24px;
+          height: 24px;
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          transition: transform 0.2s;
 
         &:hover {
           transform: scale(1.1);
@@ -422,9 +422,9 @@ onUnmounted(() => {
         cursor: pointer;
         text-align: center;
         border: 1px solid transparent;
-        border-radius: 4px;
-        padding: 8px;
-        transition: all 0.3s;
+      border-radius: 4px;
+      padding: 8px;
+      transition: all 0.3s;
 
         .thumb {
           height: 60px;
@@ -490,11 +490,11 @@ onUnmounted(() => {
         }
 
         &.active {
-          border-color: #00e1ff;
+          border-color: var(--primary-color);
           background: rgba(0, 225, 255, 0.1);
 
           span {
-            color: #00e1ff;
+            color: var(--primary-color);
           }
         }
       }
@@ -504,12 +504,12 @@ onUnmounted(() => {
 
 .info-panel {
   position: absolute;
-  top: 120px;
-  right: 20px;
+  top: calc(var(--layout-panel-top) + var(--layout-alert-stack-height));
+  right: var(--layout-panel-right);
   width: 240px;
-  padding: 15px;
+  padding: var(--space-4);
   pointer-events: auto;
-  z-index: 20;
+  z-index: var(--z-panels);
 
   .panel-header {
     margin-bottom: 15px;

@@ -2,6 +2,7 @@ import Axios, {
   AxiosRequestConfig,
   CancelTokenStatic,
   AxiosInstance,
+  InternalAxiosRequestConfig,
 } from 'axios'
 
 import NProgress from '../progress'
@@ -118,8 +119,8 @@ class EnclosureHttp {
 
   private httpInterceptorsRequest(): void {
     EnclosureHttp.axiosInstance.interceptors.request.use(
-      (config: EnclosureHttpRequestConfig) => {
-        const $config = config
+      (config: InternalAxiosRequestConfig) => {
+        const $config = config as InternalAxiosRequestConfig & EnclosureHttpRequestConfig
         NProgress.start() // 每次切换页面时，调用进度条
         const cancelKey = this.genUniqueKey($config)
         $config.cancelToken = new this.CancelToken(

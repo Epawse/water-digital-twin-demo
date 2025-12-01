@@ -265,10 +265,10 @@ export default defineComponent({
 <style lang="scss" scoped>
 .alert-container {
   position: fixed;
-  top: 80px;
-  right: 20px;
+  top: var(--layout-panel-top);
+  right: var(--layout-panel-right);
   width: 360px;
-  z-index: 1000;
+  z-index: 60; /* above panels (30–40) but below modals */
   pointer-events: none;
 
   * {
